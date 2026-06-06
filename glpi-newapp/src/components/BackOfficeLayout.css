@@ -1,0 +1,276 @@
+/* ==========================================================================
+   1. RÉINITIALISATION & CONFIGURATION GLOBALE
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100vh;
+  background-color: #f4f6f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #333;
+  overflow: hidden;
+}
+
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 70px;
+  --glpi-blue: #0c1a30;
+  --glpi-blue-hover: #172a45;
+  --glpi-active: #203a5f;
+  --glpi-light-bg: #f8f9fa;
+  --border-color: #e2e8f0;
+  --text-muted: #64748b;
+}
+
+/* ==========================================================================
+   2. LAYOUT PRINCIPAL (Prend tout l'écran)
+   ========================================================================== */
+.glpi-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   3. SIDEBAR (Rétractable & Responsive)
+   ========================================================================== */
+.glpi-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background-color: var(--glpi-blue);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  z-index: 10;
+}
+
+.glpi-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+  min-width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: white;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.toggle-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+.sidebar-menu {
+  flex: 1;
+  padding: 15px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  color: #94a3b8;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: var(--glpi-blue-hover);
+  color: #f8fafc;
+}
+
+.menu-item.active { /* À utiliser si tu ajoutes NavLink plus tard */
+  background-color: var(--glpi-active);
+  color: white;
+}
+
+.menu-item .icon {
+  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+}
+
+.menu-item .label {
+  margin-left: 12px;
+  font-size: 0.95rem;
+  transition: opacity 0.2s;
+}
+
+/* Ajustement icône quand replié */
+.glpi-sidebar.collapsed .menu-item {
+  justify-content: center;
+}
+.glpi-sidebar.collapsed .menu-item .icon { margin-right: 0; }
+
+.sidebar-footer {
+  padding: 15px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.logout-btn:hover { background: rgba(248, 113, 113, 0.1); }
+.glpi-sidebar.collapsed .logout-btn { justify-content: center; }
+
+
+/* --- Ajouts spécifiques pour les Dropdowns de la Sidebar --- */
+
+.menu-dropdown-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.dropdown-trigger {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-trigger .arrow {
+  margin-left: auto; /* Pousse la flèche tout à droite */
+  font-size: 0.75rem;
+  color: #64748b;
+  transition: transform 0.2s;
+}
+
+/* Conteneur des sous-liens */
+.sub-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.2); /* Légèrement plus sombre */
+  margin: 2px 10px;
+  border-radius: 6px;
+  padding: 4px 0;
+}
+
+/* Liens à l'intérieur du Dropdown */
+.sub-menu-item {
+  padding: 10px 14px 10px 40px; /* Décale le texte vers la droite (indentation) */
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.88rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.sub-menu-item:hover {
+  color: #ffffff;
+  background-color: var(--glpi-blue-hover);
+}
+
+/* Comportement mobile responsive */
+@media (max-width: 768px) {
+  .menu-dropdown-wrapper {
+    position: relative;
+  }
+  
+  /* Sur Mobile on évite de casser la barre horizontale, on peut afficher les sous-menus en hover ou popup, 
+     ou garder simple en n'affichant que les icônes principales */
+  .sub-menu {
+    position: absolute;
+    bottom: 60px;
+    left: 0;
+    background: var(--glpi-blue);
+    width: 150px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 100;
+  }
+  .sub-menu-item {
+    padding: 10px;
+  }
+}
+/* ==========================================================================
+   4. ZONE DE CONTENU PRINCIPALE (S'étend à 100%)
+   ========================================================================== */
+.glpi-main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* Empêche le layout général de casser */
+}
+
+.glpi-topbar {
+  height: 60px;
+  min-height: 60px;
+  background-color: white;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.topbar-title {
+  font-weight: 600;
+  color: var(--glpi-blue);
+  font-size: 1.1rem;
+}
+
+.user-profile {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: var(--glpi-light-bg);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.glpi-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto; /* Seul le contenu défile si ça déborde */
+  width: 100%;
+}

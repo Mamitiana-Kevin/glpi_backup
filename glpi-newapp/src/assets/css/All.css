@@ -1,0 +1,237 @@
+/* ==========================================================================
+   FICHIER DE STYLE GÉNÉRAL POUR LES PAGES DE CONTENU (NewApp v2)
+   ========================================================================== */
+
+/* --- Structure des titres de page --- */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0c1a30;
+}
+
+.page-header p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+/* --- Grille pour aligner plusieurs cartes (Cards) --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+/* --- Style de base pour une carte (Card) --- */
+.glpi-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.glpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* --- Cartes de statistiques géantes (style dégradé comme demandé) --- */
+.card-hero-parc {
+  background: linear-gradient(135deg, #0c1a30 0%, #1e3a63 100%);
+  color: white;
+  border: none;
+}
+
+.card-hero-assistance {
+  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+  color: white;
+  border: none;
+}
+
+.card-subtitle {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-top: 8px;
+  line-height: 1;
+}
+
+/* --- Section Titres de tableaux ou sous-catégories --- */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+  margin-top: 10px;
+}
+
+/* --- Badges de Statut pour les cellules de tableau --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.badge-active   { background-color: #e0f2fe; color: #0369a1; }
+.badge-empty    { background-color: #f1f5f9; color: #64748b; }
+.badge-incident { background-color: #fee2e2; color: #991b1b; }
+.badge-request  { background-color: #fef3c7; color: #92400e; }
+.badge-danger   { background-color: #fef2f2; color: #b91c1c; }
+.badge-success  { background-color: #f0fdf4; color: #166534; }
+
+/* --- Boutons d'action standards --- */
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary { background-color: #0c1a30; color: white; }
+.btn-primary:hover { background-color: #1e3a63; }
+
+.btn-danger { background-color: #ef4444; color: white; }
+.btn-danger:hover { background-color: #dc2626; }
+.btn:disabled { background-color: #cbd5e1; cursor: not-allowed; color: #64748b; }
+
+/* --- Responsive sur Tablettes / Mobiles --- */
+@media (max-width: 768px) {
+  .card-value {
+    font-size: 2.2rem;
+  }
+  .glpi-card {
+    padding: 16px;
+  }
+}
+
+
+/* ==========================================================================
+   5. STYLE GÉNÉRALISÉ POUR LES TABLEAUX (Default Classes)
+   ========================================================================== */
+/* Wrapper pour forcer le scroll horizontal sur petit écran sans casser le design */
+.table-container {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  margin-top: 15px;
+}
+
+table.glpi-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+/* En-têtes de tableau */
+table.glpi-table th {
+  background-color: var(--glpi-light-bg);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+/* Colonnes / cellules */
+table.glpi-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: #334155;
+  white-space: nowrap; /* Évite que le texte d'une colonne passe à la ligne de force */
+}
+
+/* Lignes alternées et effet au survol */
+table.glpi-table tr:nth-child(even) {
+  background-color: #fdfdfd;
+}
+
+table.glpi-table tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+/* ==========================================================================
+   6. RESPONSIVE DESIGN (Mobile & Tablettes)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .glpi-layout {
+    flex-direction: column; /* La sidebar passe en haut/bas */
+  }
+
+  .glpi-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    height: auto;
+  }
+
+  .sidebar-header {
+    height: 50px;
+  }
+  
+  .toggle-btn { display: none; } /* Plus besoin du bouton de réduction */
+
+  .sidebar-menu {
+    flex-direction: row; /* Menu horizontal type barre de navigation */
+    justify-content: space-around;
+    padding: 8px;
+  }
+
+  .menu-item {
+    flex-direction: column;
+    padding: 6px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .menu-item .label {
+    margin-left: 0;
+    font-size: 0.75rem;
+  }
+
+  .sidebar-footer {
+    display: none; /* On cache le footer ou la déconnexion encombrante sur mobile */
+  }
+
+  .glpi-topbar {
+    padding: 0 15px;
+    height: 50px;
+  }
+
+  .glpi-content {
+    padding: 15px;
+  }
+}
