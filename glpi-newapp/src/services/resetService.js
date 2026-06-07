@@ -1,6 +1,10 @@
 import { Legacy } from "../api/glpiClient";
 
 const allAPI = [
+    // 1. On commence par les éléments qui dépendent des autres (Tickets, Assets)
+    { url: 'Ticket', ids: null },
+    { url: 'Document', ids: null },
+    
     { url: 'Computer', ids: null },
     { url: 'Monitor', ids: null },
     { url: 'Peripheral', ids: null },
@@ -8,19 +12,28 @@ const allAPI = [
     { url: 'Phone', ids: null },
     { url: 'NetworkEquipment', ids: null },
 
-    // Consommables & Accessoires
+    // 2. Logiciels
+    { url: 'Software', ids: null },
+    { url: 'SoftwareLicense', ids: null },
+
+    // 3. Consommables
     { url: 'ConsumableItem', ids: null },
     { url: 'CartridgeItem', ids: null },
 
-    // Organisation & Logistique
+    // 4. Modèles (utilisés par les assets)
+    { url: 'ComputerModel', ids: null },
+    { url: 'MonitorModel', ids: null },
+    { url: 'PeripheralModel', ids: null },
+    { url: 'PrinterModel', ids: null },
+    { url: 'PhoneModel', ids: null },
+    { url: 'NetworkEquipmentModel', ids: null },
+
+    // 5. Dropdowns et Utilisateurs
+    { url: 'State', ids: null },
     { url: 'Location', ids: null },
     { url: 'Manufacturer', ids: null },
     { url: 'Supplier', ids: null },
-
-    // SAV & Assistance
-    { url: 'Ticket', ids: null },
-    { url: 'Software', ids: null },
-    { url: 'SoftwareLicense', ids: null }
+    { url: 'User', ids: null }
 ];
 
 async function getIdsPour(entityName) {
@@ -58,7 +71,25 @@ async function getIdsPour(entityName) {
         }
         
         // Fusion des deux listes (sans doublons)
-        targetEntity.ids = [...new Set([...activeIds, ...deletedIds])];
+        let allIds = [...new Set([...activeIds, ...deletedIds])];
+
+        // PROTECTION : Ne jamais supprimer les utilisateurs par défaut de GLPI
+        if (entityName === 'User') {
+            const defaultUserIds = [2, 3, 4, 5, 6]; // glpi, post-only, tech, normal, cron
+            allIds = allIds.filter(id => !defaultUserIds.includes(id));
+        }
+
+        // PROTECTION : Ne pas supprimer les données d'usine/système pour les dropdowns et modèles
+        const protectedEntities = [
+            'State', 'Location', 'Manufacturer', 'Supplier', 
+            'ComputerModel', 'MonitorModel', 'PeripheralModel', 
+            'PrinterModel', 'PhoneModel', 'NetworkEquipmentModel'
+        ];
+        if (protectedEntities.includes(entityName)) {
+            allIds = allIds.filter(id => id > 20); // On garde les 20 premiers IDs par sécurité
+        }
+        
+        targetEntity.ids = allIds;
         
         return targetEntity.ids;
     } catch (error) {

@@ -51,6 +51,9 @@ export default function BackOfficeLayout() {
           <Link to="/reset" className="menu-item">
             {!isCollapsed && <span className="label">Reset</span>}
           </Link>
+          <Link to="/import" className="menu-item">
+            {!isCollapsed && <span className="label">Import CSV</span>}
+          </Link>
 
           {/* DROPDOWN 1 : PARC */}
           <div className={`menu-dropdown-wrapper ${openDropdown.parc && !isCollapsed ? 'open' : ''}`}>
@@ -89,8 +92,8 @@ export default function BackOfficeLayout() {
             {/* Sous-menus de l'Assistance */}
             {openDropdown.assistance && !isCollapsed && (
               <div className="sub-menu">
-                <Link to="#" className="sub-menu-item">Tickets</Link>
-                <Link to="#" className="sub-menu-item">Créer un ticket</Link>
+                <Link to="/tickets" className="sub-menu-item">Tickets</Link>
+                <Link to="/frontoffice/create-ticket" className="sub-menu-item">Créer un ticket</Link>
               </div>
             )}
           </div>

@@ -230,6 +230,54 @@ const deleted = await Legacy.get('/Computer', { is_deleted: 1, range: '0-1000' }
 await Legacy.delPurge(`/Computer/${id}`); // Appelle DELETE ...?force_purge=1
 ```
 
+### 5. Système d'Importation (CSV & Images)
+
+L'importation est orchestrée de manière séquentielle pour garantir l'intégrité des relations entre les entités.
+
+**Architecture du module (`src/services/import/`) :**
+- **Orchestrateur** ([importOrchestrator.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/importOrchestrator.js)) : Gère le flux global (Validation -> Assets -> Tickets -> Coûts -> Images).
+- **Validators** : Valident la structure des colonnes et la présence des champs obligatoires avant tout appel API.
+- **Lookup Cache** ([lookupCache.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/helpers/lookupCache.js)) : 
+    - Convertit les noms (CSV) en IDs (GLPI).
+    - **Création automatique** : Si un lieu, un fabricant, un modèle ou un utilisateur n'existe pas, il est créé à la volée via l'API Legacy.
+- **Type Normalizer** ([typeNormalizer.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/helpers/typeNormalizer.js)) : Mappe les variations de noms (ex: "ordinateur", "PC") vers les `itemtypes` officiels de GLPI (ex: "Computer").
+
+**Logique d'importation :**
+1. **Assets (v2)** : Importation des équipements. Les relations (`status`, `location`, etc.) sont envoyées sous forme d'objets imbriqués : `manufacturer: { id: X }`.
+2. **Tickets (v2)** : Création des tickets. Les priorités et types sont mappés selon les constantes GLPI.
+3. **Liaisons (Legacy)** : Chaque asset mentionné dans la colonne `Items` du CSV ticket est lié via l'endpoint `/Item_Ticket` de l'API Legacy.
+4. **Images (Multipart)** : Les images contenues dans le ZIP sont extraites (via `JSZip`), uploadées via `FormData` sur `/Document` (en utilisant l'instance `legacy` d'axios pour le support multipart) et liées aux assets via `Document_Item`.
+
+---
+
+## Guide du Design System (CSS Global)
+
+Toutes les pages utilisent désormais [All.css](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/assets/css/All.css). Voici les classes principales à utiliser pour garder une interface cohérente :
+
+### 1. Structure de Page
+- `.page-container` : Conteneur principal de la page (flex column, gap 24px).
+- `.page-header` : En-tête avec `<h2>` pour le titre et `<p>` pour la description.
+- `.split-view` : Layout avec liste à gauche (`.panel-main`) et détails à droite (`.panel-side`).
+
+### 2. Conteneurs & Cartes
+- `.glpi-card` : Carte blanche avec bordure et ombre légère.
+- `.stats-grid` : Grille responsive pour aligner des cartes de stats.
+- `.panel-header` / `.panel-content` : Structure interne des panneaux de détails ou de listes.
+
+### 3. Tableaux
+- `table.glpi-table` : Style standard GLPI (en-têtes grisés, lignes alternées, hover).
+- `.table-wrapper` : Conteneur pour permettre le scroll vertical interne.
+
+### 4. Boutons & Formulaires
+- `.btn .btn-primary` : Bouton principal (bleu foncé).
+- `.btn .btn-outline` : Bouton secondaire (bordure grise).
+- `.btn .btn-danger` : Bouton d'action critique (rouge).
+- `.form-group` / `.form-control` : Structure standard pour les champs de saisie.
+
+### 5. Badges de Statut
+- `.badge` : Classe de base.
+- `.status-1` à `.status-6` : Couleurs automatiques selon l'ID du statut GLPI.
+
 ---
 
 ## Authentification de l'application
@@ -263,12 +311,21 @@ src/
 │   └── BackOfficeLayout.jsx     ← layout sidebar + topbar ✓ FAIT
 ├── pages/
 │   ├── Login.jsx               ← ✓ FAIT
-│   ├── Dashboard.jsx           ← ✓ FAIT
-│   ├── Reset.jsx               ← ✓ FAIT (utilise Legacy V1)
-│   ├── Import.jsx              ← À FAIRE
-│   ├── Tickets.jsx             ← À FAIRE
-│   ├── Elements.jsx            ← À FAIRE (FrontOffice)
-│   └── CreateTicket.jsx        ← À FAIRE (FrontOffice)
+│   ├── backoffice/
+│   │   ├── dashboard/
+│   │   │   └── DashBoard.jsx   ← ✓ FAIT
+│   │   ├── reset/
+│   │   │   └── Reset.jsx       ← ✓ FAIT (utilise Legacy V1)
+│   │   ├── import/
+│   │   │   └── ImportPage.jsx  ← ✓ FAIT
+│   │   └── tickets/
+│   │       ├── Tickets.jsx     ← ✓ FAIT
+│   │       └── Tickets.css     ← ✓ FAIT
+│   └── frontoffice/
+│       ├── elements/
+│       │   └── Element.jsx      ← ✓ FAIT
+│       └── tickets/
+│           └── CreateTicket.jsx ← ✓ FAIT
 └── App.jsx                     ← ✓ FAIT
 ```
 
@@ -286,17 +343,18 @@ src/
 - [x] Dashboard — compteurs assets par type (V2)
 - [x] Dashboard — compteurs tickets par statut (V2)
 - [x] Page Reset — purge des données (V1 Legacy + gestion corbeille)
+- [x] Page Import — importation CSV (Assets, Tickets, Coûts) et Images ZIP (JSZip) ✓ FAIT
 - [x] `glpiClient.js` avec persistence `sessionStorage`
 - [x] FrontOffice — Page liste des éléments avec recherche multi-critères ✓ FAIT
 - [x] FrontOffice — Page création de ticket avec association d'éléments ✓ FAIT
 - [x] Layout FrontOffice avec Sidebar dédiée ✓ FAIT
+- [x] Backoffice — Page liste des tickets avec vue détail et éléments liés ✓ FAIT
 
 ---
 
 ## Ce qui reste à faire
 
 ### Backoffice
-- [ ] Page Import — 3 fichiers CSV + 1 ZIP images
 - [ ] Page Tickets — liste avec fiche détail
 - [ ] Intégration Spring Boot + SQLite
 

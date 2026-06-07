@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
-import Reset from './pages/reset/Reset';
-import Dashboard from './pages/dashboard/Dashboard';
+import Reset from './pages/backoffice/reset/Reset';
+import Dashboard from './pages/backoffice/dashboard/DashBoard';
 import BackOfficeLayout from './components/BackOfficeLayout';
+import ImportPage from './pages/backoffice/import/ImportPage';
 
 import Element from './pages/frontoffice/elements/Element';
 import CreateTicket from './pages/frontoffice/tickets/CreateTicket';
 import FrontOfficeLayout from './components/FrontOfficeLayout';
+import Tickets from './pages/backoffice/tickets/Tickets';
 
-const Tickets = () => <div><h2>Liste des Tickets v11</h2></div>;
 const Assets = () => <div><h2>Gestion du matériel informatique</h2></div>;
 
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +46,7 @@ export default function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="reset" element={<Reset />} />
+            <Route path="import" element={<ImportPage />} />
             <Route path="assets" element={<Assets />} />
             <Route path="tickets" element={<Tickets />} />
           </Route>
