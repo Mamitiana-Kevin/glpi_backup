@@ -7,20 +7,17 @@ function parseNumber(val) {
   return isNaN(num) ? 0 : num;
 }
 
-export async function importCosts(csvText, refToId) {
+export async function importCosts(csvText, refToId, onProgress = () => {}) {
   const rows = parseCSV(csvText);
   const results = [];
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    onProgress(`Importation coût ${i + 1}/${rows.length} pour ticket ${row.Num_Ticket}`);
     try {
       const ticketId = refToId[row.Num_Ticket];
       if (!ticketId) {
-        results.push({
-          num_ticket: row.Num_Ticket,
-          success: false,
-          error: `Ticket avec la référence ${row.Num_Ticket} non trouvé dans l'import précédent`
-        });
-        continue;
+        throw new Error(`Ticket avec la référence ${row.Num_Ticket} non trouvé dans l'import précédent`);
       }
 
       const payload = {
@@ -40,11 +37,7 @@ export async function importCosts(csvText, refToId) {
       });
     } catch (error) {
       console.error(`Error importing cost for ticket ${row.Num_Ticket}:`, error);
-      results.push({
-        num_ticket: row.Num_Ticket,
-        success: false,
-        error: error.response?.data?.message || error.message
-      });
+      throw new Error(`Échec critique sur le coût du ticket ${row.Num_Ticket} : ${error.response?.data?.message || error.message}`);
     }
   }
 

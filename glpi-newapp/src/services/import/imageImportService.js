@@ -62,12 +62,13 @@ async function uploadDocument(assetName, fileBlob, extension, item) {
   }
 }
 
-export async function importImages(zipFile, nameToItem = {}) {
+export async function importImages(zipFile, nameToItem = {}, onProgress = () => {}) {
   if (!zipFile) {
     return { skipped: true, results: [] };
   }
 
   try {
+    onProgress("Extraction du fichier ZIP...");
     const zip = await JSZip.loadAsync(zipFile);
     const results = [];
 
@@ -88,18 +89,15 @@ export async function importImages(zipFile, nameToItem = {}) {
       const item = nameToItem[assetName];
 
       if (!item) {
-        results.push({ 
-          assetName, 
-          success: false, 
-          error: `Asset '${assetName}' non trouvé dans l'import CSV.` 
-        });
+        onProgress(`Avertissement : Image ${assetName} ignorée (asset non trouvé dans le CSV)`);
         return;
       }
 
       // Extraire le blob et uploader
-      const promise = file.async('blob').then(fileBlob => 
-        uploadDocument(assetName, fileBlob, extension, item)
-      ).then(res => {
+      const promise = file.async('blob').then(fileBlob => {
+        onProgress(`Upload de l'image pour ${assetName}...`);
+        return uploadDocument(assetName, fileBlob, extension, item);
+      }).then(res => {
         results.push(res);
       });
 
@@ -114,6 +112,6 @@ export async function importImages(zipFile, nameToItem = {}) {
     };
   } catch (error) {
     console.error("Error processing ZIP file:", error);
-    return { skipped: false, error: error.message, results: [] };
+    throw new Error(`Échec critique sur le traitement des images : ${error.message}`);
   }
 }

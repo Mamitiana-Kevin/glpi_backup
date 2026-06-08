@@ -41,12 +41,30 @@ const TYPE_MAPPING = {
   'chassis': 'Enclosure',
   'pdu': 'PDU',
 
+  // Équipements passifs
+  'passivedcequipment': 'PassiveDCEquipment',
+  'passiveequipment': 'PassiveDCEquipment',
+  'passif': 'PassiveDCEquipment',
+  'équipement passif': 'PassiveDCEquipment',
+
   // Câbles
   'cable': 'Cable',
+  'câble': 'Cable',
   
+  // Consommables et Cartouches
+  'cartridgeitem': 'CartridgeItem',
+  'cartouche': 'CartridgeItem',
+  'cartridge': 'CartridgeItem',
+  'consumableitem': 'ConsumableItem',
+  'consommable': 'ConsumableItem',
+  'consumable': 'ConsumableItem',
+
   // Logiciels
   'software': 'Software',
-  'logiciel': 'Software'
+  'logiciel': 'Software',
+  'softwarelicense': 'SoftwareLicense',
+  'licence': 'SoftwareLicense',
+  'licence logiciel': 'SoftwareLicense'
 };
 
 /**

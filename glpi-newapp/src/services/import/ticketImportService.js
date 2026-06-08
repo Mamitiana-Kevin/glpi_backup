@@ -1,8 +1,25 @@
-import { post, Legacy } from '../../api/glpiClient';
+import { post, put, Legacy } from '../../api/glpiClient';
 import { parseCSV } from './helpers/csvParser';
 
-const TICKET_STATUS_MAP = { New: 1, 'En cours': 2, 'En attente': 4, Résolu: 5, Clos: 6 };
-const TICKET_PRIORITY_MAP = { Low: 2, Medium: 3, High: 4, Urgent: 5 };
+const TICKET_STATUS_MAP = { 
+  New: 1, 
+  'En cours': 2, 
+  Assigned: 2,
+  Planned: 3,
+  'En attente': 4, 
+  Pending: 4,
+  Résolu: 5, 
+  Solved: 5,
+  Clos: 6,
+  Closed: 6
+};
+const TICKET_PRIORITY_MAP = { 
+  Low: 2, 
+  Medium: 3, 
+  High: 4, 
+  'Very High': 5, 
+  Urgent: 5 
+};
 const TICKET_TYPE_MAP = { Incident: 1, Demande: 2, Request: 2 };
 
 function formatDate(dateStr, heureStr) {
@@ -23,19 +40,21 @@ function parseItems(cell) {
   return cleaned.split(',').map(s => s.trim());
 }
 
-export async function importTickets(csvText, nameToItem) {
+export async function importTickets(csvText, nameToItem, onProgress = () => {}) {
   const rows = parseCSV(csvText);
   const results = [];
   const refToId = {};
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    onProgress(`Importation ticket ${i + 1}/${rows.length} : ${row.Titre}`);
     try {
       const level = TICKET_PRIORITY_MAP[row.Priority] ?? 3;
       const payload = {
         name: row.Titre,
         content: row.Description || ' ',
         type: TICKET_TYPE_MAP[row.Type] ?? 1,
-        status: { id: TICKET_STATUS_MAP[row.Status] ?? 1 },
+        status: { id: 1 }, // ÉTAPE 1 : Toujours créer en tant que "Nouveau"
         urgency: level,
         impact: level,
         priority: level,
@@ -49,6 +68,7 @@ export async function importTickets(csvText, nameToItem) {
       const items = parseItems(row.Items);
       const warnings = [];
 
+      // ÉTAPE 2 : Lier les items
       for (const itemName of items) {
         const item = nameToItem[itemName];
         if (item) {
@@ -57,9 +77,19 @@ export async function importTickets(csvText, nameToItem) {
             items_id: item.id,
             itemtype: item.itemtype
           });
+          // console.log(ticketId);
         } else {
           warnings.push(`Item non trouvé: ${itemName}`);
         }
+      }
+
+      // ÉTAPE 3 : Mettre à jour vers le statut final si différent de "Nouveau"
+      const finalStatusId = TICKET_STATUS_MAP[row.Status] ?? 1;
+      if (finalStatusId !== 1) {
+        // Utilisation de l'API Legacy car la V2 peut être capricieuse sur les updates de tickets
+        await Legacy.put(`Ticket/${ticketId}`, {
+          status: finalStatusId
+        });
       }
 
       results.push({
@@ -70,12 +100,7 @@ export async function importTickets(csvText, nameToItem) {
       });
     } catch (error) {
       console.error(`Error importing ticket ${row.Ref_Ticket}:`, error);
-      results.push({
-        ref: row.Ref_Ticket,
-        success: false,
-        id: null,
-        error: error.response?.data?.message || error.message
-      });
+      throw new Error(`Échec critique sur le ticket ${row.Ref_Ticket} : ${error.response?.data?.message || error.message}`);
     }
   }
 

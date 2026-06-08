@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { runImport } from '../../../services/import/importOrchestrator';
 
 export default function ImportPage() {
+  // Style pour le curseur clignotant des logs
+  const blinkStyle = `
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+    .blink { animation: blink 1s infinite; }
+  `;
+
   const [files, setFiles] = useState({
     feuille1: null,
     feuille2: null,
@@ -11,9 +17,14 @@ export default function ImportPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [logs, setLogs] = useState([]);
 
   const handleFileChange = (e, key) => {
     setFiles(prev => ({ ...prev, [key]: e.target.files[0] }));
+  };
+
+  const addLog = (message) => {
+    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()} - ${message}`]);
   };
 
   const handleImport = async () => {
@@ -25,12 +36,13 @@ export default function ImportPage() {
     setLoading(true);
     setResult(null);
     setError(null);
+    setLogs([]);
 
     try {
-      const res = await runImport(files);
+      const res = await runImport(files, addLog);
       setResult(res);
       if (!res.success) {
-        setError("Erreurs de validation détectées.");
+        setError(res.error || "Erreurs de validation détectées.");
       }
     } catch (err) {
       console.error(err);
@@ -42,6 +54,7 @@ export default function ImportPage() {
 
   return (
     <div className="page-container">
+      <style>{blinkStyle}</style>
       <div className="page-header">
         <h2>Système d'importation</h2>
         <p>Importation séquentielle : Assets → Tickets → Coûts</p>
@@ -77,6 +90,16 @@ export default function ImportPage() {
           {loading ? "Importation en cours..." : "Lancer l'import complet"}
         </button>
       </div>
+
+      {(logs.length > 0 || loading) && (
+        <div style={{ marginTop: '20px', padding: '15px', background: '#2c3e50', color: '#00ff00', borderRadius: '4px', fontFamily: 'monospace', fontSize: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #444' }}>JOURNAL D'IMPORTATION :</div>
+          {logs.map((log, i) => (
+            <div key={i}>{log}</div>
+          ))}
+          {loading && <div className="blink">_</div>}
+        </div>
+      )}
 
       {error && (
         <div className="badge status-4" style={{ marginTop: '20px', padding: '15px', display: 'block', color: '#900' }}>

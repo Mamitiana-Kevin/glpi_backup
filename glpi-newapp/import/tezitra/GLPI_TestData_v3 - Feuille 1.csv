@@ -1,0 +1,201 @@
+Name,Status,Location,Manufacturer,Item_Type,Model,Inventory_Number,User
+PC-BIBL-001,En production,Bibliothèque,Lenovo,Computer,EliteDesk 800 G8,ITU-2026-0001,Randriamahefa Zo
+PC-DIRE-001,En stock,Direction,Dell,Computer,Aspire TC-1700,ITU-2026-0002,
+PC-ACCU-001,En production,Accueil,Asus,Computer,ThinkCentre Neo 50,ITU-2026-0003,Rasoanaivo Marie
+PC-ADMI-001,En production,Administration,HP,Computer,EliteDesk 800 G8,ITU-2026-0004,Ramaroson Hery
+PC-ADMI-002,En panne,Administration,HP,Computer,Veriton M6680G,ITU-2026-0005,Directeur Général
+PC-ACCU-002,Maintenance,Accueil,HP,Computer,ThinkCentre M90n,ITU-2026-0006,Rakotondrabe Solo
+PC-SALL-001,Mis au rebut,Salle 301,Dell,Computer,ProDesk 400 G9,ITU-2026-0007,
+PC-MARK-001,En production,Marketing,Lenovo,Computer,OptiPlex 3090,ITU-2026-0008,Razafindrakoto Haja
+PC-MAGA-001,En production,Magasin Informatique,Dell,Computer,ThinkCentre M75,ITU-2026-0009,Rabe Hanitra
+PC-SECR-001,Mis au rebut,Secrétariat,Lenovo,Computer,ThinkPad P16,ITU-2026-0010,
+PC-SALL-002,Mis au rebut,Salle 301,Dell,Computer,ExpertCenter D7 Tower,ITU-2026-0011,
+PC-JURI-001,En panne,Juridique,Dell,Computer,ThinkCentre M75,ITU-2026-0012,Rakotondranaivo Paul
+PC-ACCU-003,En production,Accueil,Asus,Computer,ThinkCentre M70q,ITU-2026-0013,Rakotondrabe Solo
+PC-SALL-001,En stock,Salle 101,Dell,Computer,OptiPlex 7020,ITU-2026-0014,
+PC-SALL-001,Mis au rebut,Salle 201,Lenovo,Computer,OptiPlex 7090,ITU-2026-0015,
+PC-SALL-002,Mis au rebut,Salle 201,Dell,Computer,ThinkCentre M75,ITU-2026-0016,
+PC-SALL-003,Maintenance,Salle 301,Lenovo,Computer,ProDesk 400 G9,ITU-2026-0017,Randrianarisoa Lala
+PC-SECR-002,En production,Secrétariat,Lenovo,Computer,Veriton M6680G,ITU-2026-0018,ITU Labs
+PC-LABO-001,En panne,Laboratoire IA,HP,Computer,EliteBook 840 G10,ITU-2026-0019,Secrétariat
+PC-SALL-003,En production,Salle 201,Acer,Computer,ThinkCentre M75,ITU-2026-0020,Rakotomalala Fidy
+PC-ACCU-004,En production,Accueil,Lenovo,Computer,OptiPlex 7020,ITU-2026-0021,Randriamahefa Zo
+PC-COMP-001,Mis au rebut,Comptabilité,Lenovo,Computer,ThinkCentre M75,ITU-2026-0022,
+PC-SALL-004,En production,Salle 301,HP,Computer,ThinkPad X1 Carbon,ITU-2026-0023,Bibliothèque
+PC-MAGA-002,En production,Magasin Informatique,Acer,Computer,ThinkCentre M75,ITU-2026-0024,Directeur Général
+PC-JURI-002,En production,Juridique,Lenovo,Computer,OptiPlex 3090,ITU-2026-0025,Randriamahefa Zo
+PC-ACCU-005,En panne,Accueil,Lenovo,Computer,ExpertCenter D7 Tower,ITU-2026-0026,Rakotondrabe Solo
+PC-MARK-002,En panne,Marketing,Acer,Computer,ThinkCentre M70q,ITU-2026-0027,Randriamahefa Zo
+PC-DIRE-002,En panne,Direction,Acer,Computer,OptiPlex 7090,ITU-2026-0028,Infrastructure
+PC-COMP-002,Mis au rebut,Comptabilité,Dell,Computer,OptiPlex 3090,ITU-2026-0029,
+PC-SALL-001,Mis au rebut,Salle Serveur,Acer,Computer,ThinkPad P16,ITU-2026-0030,
+PC-LABO-002,Maintenance,Laboratoire IA,Acer,Computer,ThinkPad P16,ITU-2026-0031,Rakotondravelo Mamy
+PC-LOGI-001,En production,Logistique,Asus,Computer,OptiPlex 7010,ITU-2026-0032,ITU Labs
+PC-BIBL-002,En stock,Bibliothèque,Asus,Computer,EliteDesk 800 G9,ITU-2026-0033,
+PC-MAGA-003,En production,Magasin Informatique,Lenovo,Computer,ThinkCentre Neo 50,ITU-2026-0034,Andriantsoa Luc
+PC-JURI-003,En production,Juridique,Lenovo,Computer,Latitude 7440,ITU-2026-0035,Infrastructure
+PC-SALL-002,En panne,Salle Serveur,Dell,Computer,ZBook Power G10,ITU-2026-0036,Rabesoa Niry
+PC-LOGI-002,En panne,Logistique,HP,Computer,OptiPlex 3090,ITU-2026-0037,Randrianarisoa Lala
+PC-SALL-003,En panne,Salle Serveur,Asus,Computer,OptiPlex 7010,ITU-2026-0038,Andrianaivo Fanja
+PC-MAGA-004,Maintenance,Magasin Informatique,Dell,Computer,OptiPlex 5000,ITU-2026-0039,Randrianarisoa Lala
+PC-SALL-001,En production,Salle 401,Dell,Computer,EliteDesk 800 G8,ITU-2026-0040,Rakotondrabe Solo
+PC-LABO-003,En production,Laboratoire IA,Acer,Computer,OptiPlex 7090,ITU-2026-0041,Infrastructure
+PC-ACCU-006,Mis au rebut,Accueil,HP,Computer,OptiPlex 3090,ITU-2026-0042,
+PC-DSI-001,En panne,DSI,HP,Computer,EliteDesk 800 G9,ITU-2026-0043,Ramaroson Hery
+PC-MARK-003,En production,Marketing,Asus,Computer,ExpertCenter D7 Tower,ITU-2026-0044,Bibliothèque
+PC-SALL-002,En stock,Salle 101,Lenovo,Computer,ThinkCentre M75,ITU-2026-0045,
+PC-SECR-003,Maintenance,Secrétariat,Asus,Computer,ThinkCentre M90n,ITU-2026-0046,Rabe Hanitra
+PC-SALL-004,En production,Salle 201,Dell,Computer,ThinkCentre M70,ITU-2026-0047,Rakoto Jean
+PC-ACCU-007,En production,Accueil,Asus,Computer,EliteDesk 800 G8,ITU-2026-0048,Rakoto Jean
+PC-LABO-004,En stock,Laboratoire IA,Dell,Computer,EliteDesk 800 G8,ITU-2026-0049,
+PC-LABO-005,En production,Laboratoire IA,Lenovo,Computer,OptiPlex 7090,ITU-2026-0050,Ramaroson Hery
+PC-SALL-005,En production,Salle 201,Acer,Computer,ProDesk 600 G6,ITU-2026-0051,Randriatsara Nina
+PC-DIRE-003,En stock,Direction,Asus,Computer,ThinkPad X1 Carbon,ITU-2026-0052,
+PC-DSI-002,En production,DSI,Acer,Computer,ThinkCentre Neo 50,ITU-2026-0053,Razafindrakoto Haja
+PC-BIBL-003,En production,Bibliothèque,Acer,Computer,ThinkCentre M70q,ITU-2026-0054,Ratsimbazafy Clara
+PC-MARK-004,Maintenance,Marketing,Dell,Computer,Aspire TC-1700,ITU-2026-0055,Directeur Général
+PC-BIBL-004,En production,Bibliothèque,Acer,Computer,ExpertCenter D7 Tower,ITU-2026-0056,Andriamihaja Toky
+PC-BIBL-005,En production,Bibliothèque,HP,Computer,ProDesk 600 G6,ITU-2026-0057,Randriatsara Nina
+PC-JURI-004,En production,Juridique,Acer,Computer,ProDesk 400 G9,ITU-2026-0058,Rakotomalala Fidy
+PC-JURI-005,En production,Juridique,Dell,Computer,ThinkCentre M90n,ITU-2026-0059,Comptabilité
+PC-ACCU-008,En production,Accueil,Dell,Computer,ZBook Power G10,ITU-2026-0060,Randriatsara Nina
+PC-ADMI-003,En production,Administration,HP,Computer,ProDesk 400 G9,ITU-2026-0061,Ratsimbazafy Clara
+PC-DSI-003,Maintenance,DSI,HP,Computer,ThinkCentre M75,ITU-2026-0062,Rasoanaivo Marie
+PC-SALL-004,Maintenance,Salle Serveur,Dell,Computer,ThinkCentre M75,ITU-2026-0063,Rakotomalala Fidy
+PC-JURI-006,En production,Juridique,Acer,Computer,Veriton M6680G,ITU-2026-0064,Secrétariat
+PC-ACCU-009,En stock,Accueil,Acer,Computer,OptiPlex 3090,ITU-2026-0065,
+PC-SALL-003,En production,Salle 101,HP,Computer,OptiPlex 7020,ITU-2026-0066,Rakotondrabe Solo
+PC-ACCU-010,En production,Accueil,Lenovo,Computer,OptiPlex 7020,ITU-2026-0067,Rasoanaivo Marie
+PC-DSI-004,En panne,DSI,Asus,Computer,ProDesk 400 G9,ITU-2026-0068,Rasoanaivo Marie
+PC-LOGI-003,En production,Logistique,HP,Computer,OptiPlex 7090,ITU-2026-0069,Andrianaivo Fanja
+PC-LABO-006,En stock,Laboratoire IA,HP,Computer,ThinkCentre M75,ITU-2026-0070,
+PC-BIBL-006,En panne,Bibliothèque,HP,Computer,ThinkPad X1 Carbon,ITU-2026-0071,Andrianaivo Fanja
+PC-COMP-003,En panne,Comptabilité,Dell,Computer,ThinkCentre Neo 50,ITU-2026-0072,ITU Labs
+PC-LOGI-004,En production,Logistique,Lenovo,Computer,ProDesk 600 G6,ITU-2026-0073,ITU Labs
+PC-MAGA-005,En production,Magasin Informatique,Lenovo,Computer,ThinkCentre M75,ITU-2026-0074,Ranaivo Soa
+PC-SALL-002,Maintenance,Salle 401,Lenovo,Computer,OptiPlex 7090,ITU-2026-0075,Rakoto Jean
+PC-JURI-007,En panne,Juridique,Asus,Computer,OptiPlex 5000,ITU-2026-0076,Rakotondranaivo Paul
+PC-ACCU-011,En production,Accueil,Asus,Computer,EliteDesk 800 G9,ITU-2026-0077,Ranaivo Soa
+PC-SECR-004,En production,Secrétariat,HP,Computer,ThinkCentre M70q,ITU-2026-0078,Rabesoa Niry
+PC-SALL-005,Maintenance,Salle Serveur,Asus,Computer,Veriton M6680G,ITU-2026-0079,Rabesoa Niry
+PC-LOGI-005,En production,Logistique,Asus,Computer,EliteDesk 600 G9,ITU-2026-0080,ITU Labs
+MN-BIBL-001,En production,Bibliothèque,LG,Monitor,U28E590D,ITU-2026-0081,Rabe Hanitra
+MN-ACCU-001,En production,Accueil,LG,Monitor,P2722H,ITU-2026-0082,Andrianaivo Fanja
+MN-SALL-001,En stock,Salle 101,LG,Monitor,24MP400-B,ITU-2026-0083,
+MN-SALL-001,En panne,Salle 301,HP,Monitor,P2422H,ITU-2026-0084,Rasoanaivo Marie
+MN-LABO-001,En stock,Laboratoire IA,HP,Monitor,P2422H,ITU-2026-0085,
+MN-COMP-001,En production,Comptabilité,LG,Monitor,27UK650-W,ITU-2026-0086,Directeur Général
+MN-SALL-002,En production,Salle 301,Asus,Monitor,E27 G5,ITU-2026-0087,Randriatsara Nina
+MN-MARK-001,En panne,Marketing,Dell,Monitor,U28E590D,ITU-2026-0088,Rakotondranaivo Paul
+MN-DIRE-001,En panne,Direction,Dell,Monitor,E2422H,ITU-2026-0089,Rakotondrabe Solo
+MN-ACCU-002,En production,Accueil,HP,Monitor,27UK650-W,ITU-2026-0090,Rasoanaivo Marie
+MN-SALL-001,En production,Salle 401,AOC,Monitor,S32A600,ITU-2026-0091,Randrianarisoa Lala
+MN-SALL-002,En stock,Salle 101,Samsung,Monitor,U28E590D,ITU-2026-0092,
+MN-SECR-001,Mis au rebut,Secrétariat,BenQ,Monitor,E24 G5,ITU-2026-0093,
+MN-DIRE-002,En production,Direction,AOC,Monitor,34WN80C-B,ITU-2026-0094,Comptabilité
+MN-SALL-001,Maintenance,Salle Serveur,Dell,Monitor,34WN80C-B,ITU-2026-0095,Secrétariat
+MN-MAGA-001,Mis au rebut,Magasin Informatique,HP,Monitor,27BN88U,ITU-2026-0096,
+MN-SALL-003,En production,Salle 301,AOC,Monitor,U28E590D,ITU-2026-0097,Rasolofomanana Eric
+MN-COMP-002,Mis au rebut,Comptabilité,HP,Monitor,27BN88U,ITU-2026-0098,
+MN-SALL-003,Mis au rebut,Salle 101,HP,Monitor,E2422H,ITU-2026-0099,
+MN-SALL-002,Mis au rebut,Salle 401,AOC,Monitor,27BN88U,ITU-2026-0100,
+MN-SALL-001,En production,Salle 201,Asus,Monitor,24MP400-B,ITU-2026-0101,Rasolofomanana Eric
+MN-MAGA-002,En production,Magasin Informatique,AOC,Monitor,S24A400,ITU-2026-0102,Infrastructure
+MN-SALL-004,En production,Salle 301,Asus,Monitor,GW2480,ITU-2026-0103,Rasolofomanana Eric
+MN-ACCU-003,En production,Accueil,Dell,Monitor,U28E590D,ITU-2026-0104,Rakotomalala Fidy
+MN-SALL-002,En panne,Salle Serveur,LG,Monitor,S32A600,ITU-2026-0105,Rabe Hanitra
+MN-MARK-002,En production,Marketing,Asus,Monitor,U2722D,ITU-2026-0106,Ratsimbazafy Clara
+MN-LOGI-001,En production,Logistique,HP,Monitor,EX2780Q,ITU-2026-0107,Razafindrakoto Haja
+MN-SALL-005,En production,Salle 301,Asus,Monitor,E24 G5,ITU-2026-0108,Rakoto Jean
+MN-LOGI-002,Mis au rebut,Logistique,BenQ,Monitor,24MP400-B,ITU-2026-0109,
+MN-SECR-002,Maintenance,Secrétariat,Dell,Monitor,U2722D,ITU-2026-0110,Andrianaivo Fanja
+MN-MAGA-003,En stock,Magasin Informatique,AOC,Monitor,U28E590D,ITU-2026-0111,
+MN-SALL-003,En panne,Salle 401,LG,Monitor,E24 G5,ITU-2026-0112,Andriamihaja Toky
+MN-RH-001,En stock,RH,LG,Monitor,GW2780,ITU-2026-0113,
+MN-DIRE-003,En production,Direction,HP,Monitor,AC1000,ITU-2026-0114,ITU Labs
+MN-SALL-003,En panne,Salle Serveur,BenQ,Monitor,P2722H,ITU-2026-0115,Rasolofomanana Eric
+MN-ACCU-004,Mis au rebut,Accueil,Dell,Monitor,P2722H,ITU-2026-0116,
+MN-SALL-004,En production,Salle 401,HP,Monitor,EX2780Q,ITU-2026-0117,Andrianaivo Fanja
+MN-MAGA-004,Maintenance,Magasin Informatique,HP,Monitor,E27 G5,ITU-2026-0118,ITU Labs
+MN-SALL-004,En panne,Salle 101,HP,Monitor,34WN80C-B,ITU-2026-0119,ITU Labs
+MN-LABO-002,En production,Laboratoire IA,BenQ,Monitor,U2722D,ITU-2026-0120,Rakotondranaivo Paul
+MN-SALL-002,En stock,Salle 201,LG,Monitor,27BN88U,ITU-2026-0121,
+MN-SALL-005,En production,Salle 101,Dell,Monitor,S32A600,ITU-2026-0122,Randriamahefa Zo
+MN-DSI-001,En panne,DSI,AOC,Monitor,S24A400,ITU-2026-0123,Rakotondravelo Mamy
+MN-MARK-003,En stock,Marketing,BenQ,Monitor,24MP400-B,ITU-2026-0124,
+MN-RH-002,Maintenance,RH,HP,Monitor,27BN88U,ITU-2026-0125,Ranaivo Soa
+PR-ADMI-001,Mis au rebut,Administration,HP,Printer,imageRUNNER 1643i,ITU-2026-0126,
+PR-MARK-001,En production,Marketing,Brother,Printer,imageRUNNER 1643i,ITU-2026-0127,Bibliothèque
+PR-LOGI-001,Maintenance,Logistique,HP,Printer,EcoTank ET-4850,ITU-2026-0128,Randriamahefa Zo
+PR-BIBL-001,Maintenance,Bibliothèque,Brother,Printer,imageRUNNER 1643i,ITU-2026-0129,Rakotondravelo Mamy
+PR-LOGI-002,En panne,Logistique,Lexmark,Printer,HL-L2350DW,ITU-2026-0130,Infrastructure
+PR-JURI-001,En panne,Juridique,Lexmark,Printer,MFC-L8900CDW,ITU-2026-0131,
+PR-ACCU-001,Maintenance,Accueil,Brother,Printer,PIXMA TR8620,ITU-2026-0132,Andrianjafy Sitraka
+PR-JURI-002,En production,Juridique,Brother,Printer,MS421dn,ITU-2026-0133,Directeur Général
+PR-SALL-001,Mis au rebut,Salle 301,Lexmark,Printer,DCP-L3551CDW,ITU-2026-0134,
+PR-SALL-001,En production,Salle 201,Canon,Printer,LaserJet Pro M479fdw,ITU-2026-0135,Bibliothèque
+PR-SALL-001,En production,Salle 401,Epson,Printer,HL-L2350DW,ITU-2026-0136,Andriamihaja Toky
+PR-ACCU-002,En production,Accueil,Brother,Printer,Color LaserJet Pro M255dw,ITU-2026-0137,Randriamahefa Zo
+PR-RH-001,En stock,RH,Brother,Printer,PIXMA TR8620,ITU-2026-0138,
+PR-SALL-001,En production,Salle 101,Canon,Printer,MFC-L8900CDW,ITU-2026-0139,Andriamihaja Toky
+PR-ACCU-003,Maintenance,Accueil,Canon,Printer,LaserJet Pro M404dn,ITU-2026-0140,Razafindrakoto Haja
+PR-MARK-002,Maintenance,Marketing,Lexmark,Printer,PIXMA TR8620,ITU-2026-0141,Rakoto Jean
+PR-RH-002,Maintenance,RH,HP,Printer,HL-L2350DW,ITU-2026-0142,Rabesoa Niry
+PR-RH-003,Mis au rebut,RH,Canon,Printer,EcoTank ET-4850,ITU-2026-0143,
+PR-ACCU-004,Mis au rebut,Accueil,Lexmark,Printer,MX622ade,ITU-2026-0144,
+PR-SALL-002,Maintenance,Salle 201,Brother,Printer,HL-L5100DN,ITU-2026-0145,Ratsimbazafy Clara
+SW-DSI-001,En production,DSI,Netgear,NetworkEquipment,UniFi Dream Machine,ITU-2026-0146,ITU Labs
+SW-RH-001,En stock,RH,HP,NetworkEquipment,WAX620,ITU-2026-0147,
+SW-DIRE-001,En panne,Direction,TP-Link,NetworkEquipment,Catalyst 2960-X,ITU-2026-0148,Rasolofomanana Eric
+SW-ADMI-001,En production,Administration,Juniper,NetworkEquipment,GS724Tv4,ITU-2026-0149,Ranaivo Soa
+SW-JURI-001,En production,Juridique,Cisco,NetworkEquipment,UniFi AP AC Pro,ITU-2026-0150,Rasolofomanana Eric
+SW-MAGA-001,En production,Magasin Informatique,Netgear,NetworkEquipment,UniFi Dream Machine,ITU-2026-0151,Andriamihaja Toky
+SW-RH-002,En production,RH,Netgear,NetworkEquipment,UniFi AP AC Pro,ITU-2026-0152,
+SW-LABO-001,Maintenance,Laboratoire IA,Cisco,NetworkEquipment,EAP670,ITU-2026-0153,Rasoanaivo Marie
+SW-SECR-001,En production,Secrétariat,Juniper,NetworkEquipment,ISR 4321,ITU-2026-0154,Infrastructure
+SW-COMP-001,Mis au rebut,Comptabilité,Cisco,NetworkEquipment,Aruba AP-515,ITU-2026-0155,
+SW-SALL-001,Mis au rebut,Salle 101,Cisco,NetworkEquipment,Meraki MX67,ITU-2026-0156,
+SW-SALL-001,En production,Salle 201,Netgear,NetworkEquipment,ISR 4331,ITU-2026-0157,Rakotondrabe Solo
+SW-SALL-002,Maintenance,Salle 101,Juniper,NetworkEquipment,UniFi AP AC Pro,ITU-2026-0158,Infrastructure
+SW-SECR-002,En production,Secrétariat,TP-Link,NetworkEquipment,ISR 4331,ITU-2026-0159,Infrastructure
+SW-SALL-001,En production,Salle Serveur,Cisco,NetworkEquipment,TL-SG2428P,ITU-2026-0160,Rakoto Jean
+SW-SALL-001,En panne,Salle 401,Juniper,NetworkEquipment,GS308E,ITU-2026-0161,Rasolofomanana Eric
+SW-SALL-003,En production,Salle 101,TP-Link,NetworkEquipment,Aruba AP-515,ITU-2026-0162,Rabe Hanitra
+SW-SALL-002,Mis au rebut,Salle 401,Juniper,NetworkEquipment,ISR 4331,ITU-2026-0163,
+SW-COMP-002,En production,Comptabilité,TP-Link,NetworkEquipment,GS724Tv4,ITU-2026-0164,ITU Labs
+SW-SECR-003,En production,Secrétariat,TP-Link,NetworkEquipment,UniFi Dream Machine,ITU-2026-0165,Rakoto Jean
+SW-MARK-001,Mis au rebut,Marketing,Netgear,NetworkEquipment,ISR 4331,ITU-2026-0166,
+SW-MARK-002,En production,Marketing,Juniper,NetworkEquipment,WAX620,ITU-2026-0167,Bibliothèque
+SW-DIRE-002,Maintenance,Direction,HP,NetworkEquipment,SRX320,ITU-2026-0168,Directeur Général
+SW-SALL-001,En panne,Salle 301,TP-Link,NetworkEquipment,EX2300-24T,ITU-2026-0169,Rakotondravelo Mamy
+SW-MARK-003,Mis au rebut,Marketing,Juniper,NetworkEquipment,TL-SG2428P,ITU-2026-0170,
+PH-SALL-001,En production,Salle 301,Jabra,Peripheral,K380,ITU-2026-0171,Rakotomalala Fidy
+PH-JURI-001,En production,Juridique,Plantronics,Peripheral,Contour Mouse,ITU-2026-0172,Andrianaivo Fanja
+PH-RH-001,En production,RH,Logitech,Peripheral,Blackwire 3320,ITU-2026-0173,Andriamihaja Toky
+PH-SALL-001,Maintenance,Salle Serveur,Jabra,Peripheral,Speak 510,ITU-2026-0174,Comptabilité
+PH-SALL-002,En production,Salle 301,Microsoft,Peripheral,Evolve2 75,ITU-2026-0175,Randriatsara Nina
+PH-ADMI-001,En panne,Administration,Jabra,Peripheral,K380,ITU-2026-0176,Randriamahefa Zo
+PH-MARK-001,Maintenance,Marketing,Kensington,Peripheral,Lift Vertical,ITU-2026-0177,Bibliothèque
+PH-DSI-001,En stock,DSI,Plantronics,Peripheral,LifeCam Studio,ITU-2026-0178,
+PH-ADMI-002,En production,Administration,Microsoft,Peripheral,Lift Vertical,ITU-2026-0179,Rasolofomanana Eric
+PH-SALL-001,En production,Salle 201,Kensington,Peripheral,Speak 510,ITU-2026-0180,Andrianjafy Sitraka
+PH-ACCU-001,En panne,Accueil,Microsoft,Peripheral,Webcam C920,ITU-2026-0181,Secrétariat
+PH-ACCU-002,En production,Accueil,Microsoft,Peripheral,LifeCam Studio,ITU-2026-0182,Rakotomalala Fidy
+PH-SALL-001,En production,Salle 401,Jabra,Peripheral,K400 Plus,ITU-2026-0183,Secrétariat
+PH-SALL-001,En production,Salle 101,Logitech,Peripheral,SafeDock,ITU-2026-0184,Infrastructure
+PH-SALL-002,En production,Salle Serveur,Jabra,Peripheral,Blackwire 3320,ITU-2026-0185,Rakotomalala Fidy
+PH-LOGI-001,En panne,Logistique,Microsoft,Peripheral,K400 Plus,ITU-2026-0186,
+PH-SALL-002,En production,Salle 101,Jabra,Peripheral,Speak 510,ITU-2026-0187,Andriantsoa Luc
+PH-SALL-002,En production,Salle 401,Kensington,Peripheral,MX Master 3,ITU-2026-0188,Rakotomalala Fidy
+PH-COMP-001,En production,Comptabilité,Kensington,Peripheral,Evolve2 55,ITU-2026-0189,Bibliothèque
+PH-DIRE-001,En stock,Direction,Plantronics,Peripheral,K400 Plus,ITU-2026-0190,
+MOB-ADMI-001,En panne,Administration,Cisco,Phone,IP Phone 8851,ITU-2026-0191,Andrianjafy Sitraka
+MOB-JURI-001,En production,Juridique,Samsung,Phone,iPhone 14 Pro,ITU-2026-0192,Rakotomalala Fidy
+MOB-DSI-001,En production,DSI,Apple,Phone,Galaxy A34,ITU-2026-0193,Andrianjafy Sitraka
+MOB-LABO-001,En panne,Laboratoire IA,Apple,Phone,iPhone 15,ITU-2026-0194,Ranaivo Soa
+MOB-SALL-001,En production,Salle 401,Samsung,Phone,iPhone 13,ITU-2026-0195,Randriatsara Nina
+MOB-MARK-001,En panne,Marketing,Yealink,Phone,T54W,ITU-2026-0196,Andrianaivo Fanja
+MOB-SALL-001,Mis au rebut,Salle 201,Yealink,Phone,Galaxy A34,ITU-2026-0197,
+MOB-JURI-002,Maintenance,Juridique,Cisco,Phone,T46U,ITU-2026-0198,Rakotondrabe Solo
+MOB-MARK-002,En production,Marketing,Yealink,Phone,IP Phone 8865,ITU-2026-0199,Rasoanaivo Marie
+MOB-BIBL-001,Mis au rebut,Bibliothèque,Samsung,Phone,VVX 450,ITU-2026-0200,
