@@ -106,7 +106,7 @@ export async function fetchTicketStats() {
     const total = await fetchCount('Assistance/Ticket', { filter: 'is_deleted==0' });
     
     const response = await get('Assistance/Ticket', { 
-      limit: 200,
+      limit: 100,
       filter: 'is_deleted==0' 
     });
     const tickets = Array.isArray(response.data) ? response.data : (response.data?.data || []);
@@ -130,7 +130,7 @@ export async function fetchTicketStats() {
 export async function fetchTicketTypeStats() {
   try {
     const response = await get('Assistance/Ticket', { 
-      limit: 200,
+      limit: 100,
       filter: 'is_deleted==0' 
     });
     const tickets = Array.isArray(response.data) ? response.data : (response.data?.data || []);

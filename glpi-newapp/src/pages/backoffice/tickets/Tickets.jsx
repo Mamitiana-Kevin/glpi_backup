@@ -31,21 +31,33 @@ export default function Tickets() {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  
+  // Filtres
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  useEffect(() => {
-    loadTickets();
-  }, []);
-
-  const loadTickets = async () => {
+  // Fonction de chargement avec paramètres explicites
+  const loadTickets = async (search, status) => {
     setLoading(true);
     try {
-      const data = await fetchTickets();
+      const data = await fetchTickets({ searchText: search, status: status });
       setTickets(data);
     } catch (error) {
       console.error("Erreur chargement tickets", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadTickets(searchText, statusFilter);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText, statusFilter]);
+
+  const handleRefresh = () => {
+    loadTickets(searchText, statusFilter);
   };
 
   const handleViewDetails = async (ticketId) => {
@@ -79,11 +91,33 @@ export default function Tickets() {
     <div className="tickets-container">
       {/* ── Liste des Tickets ── */}
       <div className={`tickets-list-panel ${selectedTicket ? 'minimized' : 'full-width'}`}>
-        <div className="panel-header">
-          <h2>Tickets</h2>
-          <button onClick={loadTickets} className="refresh-btn">
-            Rafraîchir
-          </button>
+        <div className="panel-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '15px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <h2>Tickets</h2>
+            <button onClick={handleRefresh} className="refresh-btn">
+              Rafraîchir
+            </button>
+          </div>
+          
+          <div className="filters-bar" style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            <input 
+              type="text" 
+              placeholder="Rechercher un ticket..." 
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid #ddd' }}
+            />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd', minWidth: '150px' }}
+            >
+              <option value="">Tous les statuts</option>
+              {Object.entries(STATUS_LABELS).map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="table-wrapper">

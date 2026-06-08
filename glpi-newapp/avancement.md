@@ -230,6 +230,10 @@ const deleted = await Legacy.get('/Computer', { is_deleted: 1, range: '0-1000' }
 await Legacy.delPurge(`/Computer/${id}`); // Appelle DELETE ...?force_purge=1
 ```
 
+**Protections implémentées :**
+- **Utilisateurs par défaut** : Les IDs 2 à 6 (`glpi`, `tech`, `post-only`, etc.) sont exclus de la purge.
+- **Données d'usine** : Pour les dropdowns et modèles, les IDs <= 20 sont préservés pour ne pas casser la configuration standard de GLPI.
+
 ### 5. Système d'Importation (CSV & Images)
 
 L'importation est orchestrée de manière séquentielle pour garantir l'intégrité des relations entre les entités.
@@ -240,10 +244,12 @@ L'importation est orchestrée de manière séquentielle pour garantir l'intégri
 - **Lookup Cache** ([lookupCache.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/helpers/lookupCache.js)) : 
     - Convertit les noms (CSV) en IDs (GLPI).
     - **Création automatique** : Si un lieu, un fabricant, un modèle ou un utilisateur n'existe pas, il est créé à la volée via l'API Legacy.
-- **Type Normalizer** ([typeNormalizer.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/helpers/typeNormalizer.js)) : Mappe les variations de noms (ex: "ordinateur", "PC") vers les `itemtypes` officiels de GLPI (ex: "Computer").
+- **Type Normalizer** ([typeNormalizer.js](file:///c:/xampp/htdocs/glpi/glpi-newapp/src/services/import/helpers/typeNormalizer.js)) : 
+    - Mappe les variations de noms (ex: "ordinateur", "PC", "baie", "chassis") vers les `itemtypes` officiels.
+    - Gère l'insensibilité à la casse et les traductions.
 
 **Logique d'importation :**
-1. **Assets (v2)** : Importation des équipements. Les relations (`status`, `location`, etc.) sont envoyées sous forme d'objets imbriqués : `manufacturer: { id: X }`.
+1. **Assets (Legacy)** : Importation des équipements via l'API Legacy pour une meilleure compatibilité des types. Les relations sont envoyées via des champs plats (ex: `states_id: X`). Support étendu : `Computer`, `Monitor`, `Software`, `NetworkEquipment`, `Printer`, `Phone`, `Peripheral`, `Rack`, `Enclosure`, `PDU`, `Cable`, `CartridgeItem`, `ConsumableItem`.
 2. **Tickets (v2)** : Création des tickets. Les priorités et types sont mappés selon les constantes GLPI.
 3. **Liaisons (Legacy)** : Chaque asset mentionné dans la colonne `Items` du CSV ticket est lié via l'endpoint `/Item_Ticket` de l'API Legacy.
 4. **Images (Multipart)** : Les images contenues dans le ZIP sont extraites (via `JSZip`), uploadées via `FormData` sur `/Document` (en utilisant l'instance `legacy` d'axios pour le support multipart) et liées aux assets via `Document_Item`.
@@ -331,37 +337,55 @@ src/
 
 ---
 
-## Ce qui est fait ✓
+## Avancement des fonctionnalités
 
-- [x] GLPI 11.0.7 installé et fonctionnel sur XAMPP
-- [x] API V2 OAuth2 configurée et fonctionnelle
-- [x] API V1 Legacy configurée et fonctionnelle
-- [x] Proxy Vite configuré (pas de CORS)
-- [x] Login React avec V2 OAuth2
-- [x] Redirect après login vers `/dashboard`
-- [x] Layout sidebar avec navigation (Parc, Assistance)
-- [x] Dashboard — compteurs assets par type (V2)
-- [x] Dashboard — compteurs tickets par statut (V2)
-- [x] Page Reset — purge des données (V1 Legacy + gestion corbeille)
-- [x] Page Import — importation CSV (Assets, Tickets, Coûts) et Images ZIP (JSZip) ✓ FAIT
-- [x] `glpiClient.js` avec persistence `sessionStorage`
-- [x] FrontOffice — Page liste des éléments avec recherche multi-critères ✓ FAIT
-- [x] FrontOffice — Page création de ticket avec association d'éléments ✓ FAIT
-- [x] Layout FrontOffice avec Sidebar dédiée ✓ FAIT
-- [x] Backoffice — Page liste des tickets avec vue détail et éléments liés ✓ FAIT
+| Fonctionnalité | État | Détails |
+|---|---|---|
+| Connexion OAuth2 (v2) | ✅ Fait | Authentification via Grant Type Password |
+| Dashboard Stats | ✅ Fait | Correction des compteurs (Content-Range & X-Total-Count) |
+| Import CSV Assets | ✅ Fait | Orchestrateur Tout-ou-Rien, via API Legacy pour compatibilité totale |
+| Import CSV Tickets | ✅ Fait | Workflow en 2 étapes (Création puis MAJ Statut) |
+| Import Images (ZIP) | ✅ Fait | Upload multipart vers `/Document` |
+| Reset (Purge) | ✅ Fait | Protection des IDs système (2-6) et IDs <= 20 |
+| Documentation Technique | ✅ Fait | Création du fichier `documentation.md` |
+| Backend Spring Boot | ⏳ À FAIRE | Centralisation de la logique et stockage local |
 
 ---
 
-## Ce qui reste à faire
+## Modifications récentes (08/06/2026)
 
-### Backoffice
-- [ ] Page Tickets — liste avec fiche détail
-- [ ] Intégration Spring Boot + SQLite
+### Dashboard et Compteurs
+- **Correction des 0 dans le Dashboard** : 
+  - `fetchCount` est devenu hybride et plus robuste. Il vérifie `Content-Range` (v1/v2), `X-Total-Count` et même le corps de la réponse si l'API renvoie un objet `{ total: X, data: [...] }`.
+  - Suppression des slashes initiaux dans les endpoints pour assurer que le `baseURL` d'Axios soit correctement pris en compte.
+  - Ajout du paramètre `get_full_count: true` et `range: 0-0` pour les appels Legacy afin de forcer GLPI à renvoyer le total dans les headers sans charger toutes les données.
+- **Vue exhaustive du parc** : Le Dashboard affiche désormais l'intégralité des équipements gérés par l'importateur Legacy (Baies, Châssis, PDU, Câbles, Consommables, etc.) en utilisant `fetchAllLegacy()`.
 
-### Spring Boot (backend local)
-- [ ] Modèles JPA : Computer, Ticket, User, ImportLog
-- [ ] ImportService : parse CSV → SQLite → sync GLPI
-- [ ] Endpoints REST pour React
+### Assistance (Tickets)
+- **Filtrage et Recherche** : Implémentation d'une barre de recherche (Nom/Contenu) et d'un filtre par statut dans la liste des tickets.
+- **Logique de Robustesse** : Utilisation d'un système hybride (RSQL API v2 + filtrage client en fallback) pour garantir le fonctionnement de la recherche même sur les versions de GLPI limitées.
+- **Debouncing** : Optimisation des performances avec un délai de 300ms avant le déclenchement des requêtes de recherche.
+
+### Reset et Purge
+- **Synchronisation avec l'Import** : Le service de Reset a été étendu pour inclure tous les nouveaux types d'assets (Rack, Enclosure, PDU, PassiveDCEquipment, Cable, Unmanaged) ainsi que leurs modèles respectifs.
+- **Protection des données d'usine** : Les nouveaux modèles (`RackModel`, etc.) ont été ajoutés à la liste des entités protégées (ID <= 20) pour préserver la stabilité du système GLPI.
+
+### Authentification Legacy
+- **Choix des Credentials** : L'API Legacy (`apirest.php`) continue d'utiliser le compte `glpi/glpi` par défaut pour les opérations de Reset et les statistiques étendues du Dashboard. Ce choix permet de garantir que ces opérations critiques disposent des permissions nécessaires (Super-Admin) indépendamment de l'utilisateur connecté via OAuth2.
+- **Récursivité** : Ajout de `is_recursive=1` sur les appels Legacy pour s'assurer que les compteurs incluent les éléments de toutes les sous-entités.
+
+### Normalisation
+- **Support étendu des Assets** : Les types comme `CartridgeItem` ou `Software` sont désormais gérés correctement via l'API Legacy car ils ne se trouvent pas sous le préfixe `/Assets/` de la V2.
+
+---
+
+## Journal de bord des erreurs corrigées
+- **Erreur 400 (User creation)** : L'API Legacy attendait `name` au lieu de `login`. Corrigé.
+- **Erreur 404 (Ticket Update)** : Le `PUT` sur `/api/Assistance/Ticket/ID` échouait sur certaines versions. Corrigé en utilisant `Legacy.put('Ticket/ID', ...)`.
+- **Dashboard vide** : Les headers de comptage variaient selon la version de GLPI. Corrigé avec une logique de détection multi-sources.
+- **CORS / Proxy** : Configuration du proxy Vite pour rediriger `/api` et `/apirest` vers les bons scripts PHP de GLPI.
+- **Reset incomplet** : Certains types d'assets importés n'étaient pas ciblés par la purge. Corrigé en synchronisant `allAPI` dans `resetService.js`.
+- **Recherche Tickets inopérante** : Correction de la syntaxe RSQL et ajout d'un filtrage local de secours pour assurer la fiabilité de la recherche.
 
 ---
 
