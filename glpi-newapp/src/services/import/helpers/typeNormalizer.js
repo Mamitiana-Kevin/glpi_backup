@@ -64,7 +64,15 @@ const TYPE_MAPPING = {
   'logiciel': 'Software',
   'softwarelicense': 'SoftwareLicense',
   'licence': 'SoftwareLicense',
-  'licence logiciel': 'SoftwareLicense'
+  'licence logiciel': 'SoftwareLicense',
+
+  // Salles et Bases de données
+  'dcroom': 'DCRoom',
+  'salle': 'DCRoom',
+  'room': 'DCRoom',
+  'database': 'Database',
+  'bdd': 'Database',
+  'base de données': 'Database'
 };
 
 /**

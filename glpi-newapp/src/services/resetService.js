@@ -17,6 +17,8 @@ const allAPI = [
     { url: 'PassiveDCEquipment', ids: null },
     { url: 'Cable', ids: null },
     { url: 'Unmanaged', ids: null },
+    { url: 'DCRoom', ids: null },
+    { url: 'Database', ids: null },
 
     // 2. Logiciels
     { url: 'Software', ids: null },
@@ -37,6 +39,7 @@ const allAPI = [
     { url: 'EnclosureModel', ids: null },
     { url: 'PDUModel', ids: null },
     { url: 'PassiveDCEquipmentModel', ids: null },
+    { url: 'DatabaseModel', ids: null },
 
     // 5. Dropdowns et Utilisateurs
     { url: 'State', ids: null },
@@ -94,7 +97,8 @@ async function getIdsPour(entityName) {
             'State', 'Location', 'Manufacturer', 'Supplier', 
             'ComputerModel', 'MonitorModel', 'PeripheralModel', 
             'PrinterModel', 'PhoneModel', 'NetworkEquipmentModel',
-            'RackModel', 'EnclosureModel', 'PDUModel', 'PassiveDCEquipmentModel'
+            'RackModel', 'EnclosureModel', 'PDUModel', 'PassiveDCEquipmentModel',
+            'DatabaseModel'
         ];
         if (protectedEntities.includes(entityName)) {
             allIds = allIds.filter(id => id > 20); // On garde les 20 premiers IDs par sécurité

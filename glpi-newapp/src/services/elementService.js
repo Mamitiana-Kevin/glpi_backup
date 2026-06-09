@@ -21,7 +21,7 @@ export async function fetchElements({ name = '', type = '', location = '' } = {}
     typesToFetch.map(async (assetType) => {
       try {
         const params = { limit: 50 };
-        const filters = ['is_deleted==0']; // Par défaut, on ne prend que les actifs
+        const filters = ['is_deleted==0']; // Par dé81faut, on ne prend que les actifs
         // Ajouter des wildcards '*' pour la recherche partielle avec ilike
         if (name)     filters.push(`name=ilike=*${name}*`);
         if (location) filters.push(`location.name=ilike=*${location}*`);

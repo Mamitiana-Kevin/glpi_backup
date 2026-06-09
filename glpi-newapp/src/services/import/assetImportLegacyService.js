@@ -8,6 +8,8 @@ const TYPES_WITHOUT_MODEL = [
   'Cable',
   'CartridgeItem',
   'ConsumableItem',
+  'DCRoom',
+  'Database',
 ];
 
 const MODEL_FIELD_MAP = {
@@ -21,6 +23,7 @@ const MODEL_FIELD_MAP = {
   Enclosure:          'enclosuremodels_id',
   PDU:                'pdumodels_id',
   PassiveDCEquipment: 'passivedcequipmentmodels_id',
+  Database:           'databasemodels_id',
 };
 
 const MODEL_TYPE_MAP = {
@@ -34,6 +37,7 @@ const MODEL_TYPE_MAP = {
   Enclosure:          'EnclosureModel',
   PDU:                'PDUModel',
   PassiveDCEquipment: 'PassiveDCEquipmentModel',
+  Database:           'DatabaseModel',
 };
 
 export async function importAssetsLegacy(csvText, onProgress = () => {}) {
@@ -72,6 +76,12 @@ export async function importAssetsLegacy(csvText, onProgress = () => {}) {
         name: row.Name,
         otherserial: row.Inventory_Number || '',
       };
+
+      // Payload spécifique pour DCRoom (Salles)
+      if (itemType === 'DCRoom') {
+        payload.vis_rows = row.vis_rows || 10; // Par défaut 10 rangées
+        payload.vis_cols = row.vis_cols || 10; // Par défaut 10 colonnes
+      }
 
       if (statusId)       payload.states_id        = statusId;
       if (locationId)     payload.locations_id      = locationId;

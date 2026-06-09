@@ -26,6 +26,8 @@ const ALL_PARC_TYPES = [
   { key: 'PassiveDCEquipment', label: 'Équipements passifs' },
   { key: 'Unmanaged',          label: 'Actifs non gérés' },
   { key: 'Cable',              label: 'Câbles' },
+  { key: 'DCRoom',             label: 'Salles (Datacenter)' },
+  { key: 'Database',           label: 'Bases de données' },
 ];
 
 const TICKET_STATUSES = [
