@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    },
     proxy: {
       '/apirest': {
         target: 'http://localhost',
@@ -37,6 +42,14 @@ export default defineConfig({
             }
           });
         },
+      },
+      '/settings': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/history': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
       },
     },
   },

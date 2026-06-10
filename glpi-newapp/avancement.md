@@ -312,9 +312,12 @@ src/
 │   └── AuthContext.jsx         ← gestion connexion
 ├── services/
 │   ├── dashboardService.js     ← stats assets + tickets ✓ FAIT
-│   └── resetService.js         ← purge Legacy ✓ FAIT
+│   ├── resetService.js         ← purge Legacy ✓ FAIT
+│   └── ticketService.js        ← gestion tickets (v2 + Legacy Kanban) ✓ FAIT
 ├── components/
-│   └── BackOfficeLayout.jsx     ← layout sidebar + topbar ✓ FAIT
+│   ├── BackOfficeLayout.jsx    ← layout sidebar + topbar ✓ FAIT
+│   ├── KanbanCard.jsx          ← carte ticket Kanban ✓ FAIT
+│   └── KanbanColumn.jsx        ← colonne statut Kanban ✓ FAIT
 ├── pages/
 │   ├── Login.jsx               ← ✓ FAIT
 │   ├── backoffice/
@@ -331,7 +334,8 @@ src/
 │       ├── elements/
 │       │   └── Element.jsx      ← ✓ FAIT
 │       └── tickets/
-│           └── CreateTicket.jsx ← ✓ FAIT
+│           ├── CreateTicket.jsx ← ✓ FAIT
+│           └── KanbanPage.jsx   ← vue Kanban des tickets ✓ FAIT
 └── App.jsx                     ← ✓ FAIT
 ```
 
@@ -347,6 +351,7 @@ src/
 | Import CSV Tickets | ✅ Fait | Workflow en 2 étapes (Création puis MAJ Statut) |
 | Import Images (ZIP) | ✅ Fait | Upload multipart vers `/Document` |
 | Reset (Purge) | ✅ Fait | Protection des IDs système (2-6) et IDs <= 20 |
+| Vue Kanban (Tickets) | ✅ Fait | Gestion drag&drop par statut (Nouveau, En cours, Résolu) |
 | Documentation Technique | ✅ Fait | Création du fichier `documentation.md` |
 | Backend Spring Boot | ⏳ À FAIRE | Centralisation de la logique et stockage local |
 
@@ -376,6 +381,17 @@ src/
 
 ### Normalisation
 - **Support étendu des Assets** : Les types comme `CartridgeItem` ou `Software` sont désormais gérés correctement via l'API Legacy car ils ne se trouvent pas sous le préfixe `/Assets/` de la V2.
+
+---
+
+## Modifications récentes (10/06/2026)
+
+### Kanban des Tickets
+- **Vue Kanban** : Implémentation d'une page Kanban permettant de visualiser les tickets par colonnes de statut (Nouveau, En cours, Résolu).
+- **Drag & Drop** : Support du glisser-déposer pour changer le statut des tickets de manière fluide.
+- **Composants Dédiés** : Création de `KanbanCard` et `KanbanColumn` pour une structure modulaire et réutilisable.
+- **Optimisation UI** : Mise à jour optimiste de l'interface lors du déplacement d'un ticket, avec mécanisme de rollback en cas d'échec de l'API.
+- **Service Dédié** : Ajout de `fetchKanbanTickets` et `updateTicketStatus` dans `ticketService.js` utilisant l'API Legacy pour le filtrage et la mise à jour simplifiée des statuts.
 
 ---
 
@@ -432,8 +448,8 @@ src/
 
 ## Règles importantes à respecter
 
-1. **Toujours utiliser `get/post/put/del` (V2) sauf pour le Reset**
-2. **Ne jamais utiliser `Legacy.*` en dehors de `resetService.js`**
+1. **Toujours utiliser `get/post/put/del` (V2) sauf pour le Reset et le Kanban**
+2. **Ne jamais utiliser `Legacy.*` en dehors de `resetService.js` et des fonctions Kanban de `ticketService.js`**
 3. **Toujours passer par le proxy Vite — ne jamais hardcoder `http://localhost/glpi`**
 4. **Les réponses sont en JSON — toujours lire `response.data`**
 5. **Pour compter les éléments — lire `response.headers['x-total-count']`**

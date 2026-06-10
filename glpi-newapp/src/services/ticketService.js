@@ -174,27 +174,3 @@ export async function updateTicketStatus(ticketId, newStatus) {
   console.log('Update Ticket Status:', response.data, newStatus);
   return response.data;
 }
-
-// Mise à jour optimiste de l'UI (pas d'appel API)
-export function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
-  return {
-    ...columns,
-    [oldStatusId]: columns[oldStatusId].filter((t) => t.id !== ticket.id),
-    [newStatusId]: [
-      ...(columns[newStatusId] ?? []),
-      { ...ticket, status: newStatusId },
-    ],
-  };
-}
-
-// Rollback si l'API échoue
-export function rollbackTicket(columns, ticket, oldStatusId, newStatusId) {
-  return {
-    ...columns,
-    [newStatusId]: columns[newStatusId].filter((t) => t.id !== ticket.id),
-    [oldStatusId]: [
-      ...(columns[oldStatusId] ?? []),
-      ticket,
-    ],
-  };
-}

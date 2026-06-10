@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  fetchKanbanTickets,
+fetchKanbanTickets,
   updateTicketStatus,
-  moveTicketOptimistic,
-  rollbackTicket,
   KANBAN_STATUSES,
 } from '../../../services/ticketService';
+import {
+  fetchKanbanSettings,
+  extractColors,
+  extractLabels,
+  extractAvailableLanguages,
+} from '../../../services/backend/kanbanSettingsService';
 import KanbanColumn from '../../../components/KanbanColumn';
 import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
 import '../../../components/kanban.css';
+import { saveTicketStatusHistory } from '../../../services/backend/ticketService';
 
 export default function KanbanPage() {
   const [columns,        setColumns]        = useState({ 1: [], 2: [], 5: [] });
@@ -19,21 +24,47 @@ export default function KanbanPage() {
   const [showAddModal,   setShowAddModal]   = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // Couleurs — remplacées par SQLite plus tard
-  const [colors] = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
+  // Settings depuis SQLite
+  const [colors,      setColors]      = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
+  const [labels,      setLabels]      = useState({ 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' });
+  const [languages,   setLanguages]   = useState(['fr']);
+  const [currentLang, setCurrentLang] = useState('fr');
 
+  const statusesWithLabels = KANBAN_STATUSES.map((s) => ({
+    ...s,
+    label: labels[s.id] ?? s.label, // ← remplace par la traduction
+  }));
+
+  
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchKanbanTickets();
-      setColumns(data);
+      const [ticketData, settings] = await Promise.all([
+        fetchKanbanTickets(),
+        fetchKanbanSettings().catch(() => ({})),
+      ]);
+      setColumns(ticketData);
+      setColors(extractColors(settings));
+      setLabels(extractLabels(settings, currentLang));
+      setLanguages(extractAvailableLanguages(settings));
     } catch {
       setError('Impossible de charger les tickets.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentLang]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Changer de langue sans recharger les tickets
+  const handleLangChange = async (lang) => {
+    setCurrentLang(lang);
+    try {
+      const settings = await fetchKanbanSettings();
+      setLabels(extractLabels(settings, lang));
+    } catch {}
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -47,6 +78,30 @@ export default function KanbanPage() {
     e.dataTransfer.dropEffect = 'move';
   };
 
+  
+// Mise à jour optimiste de l'UI (pas d'appel API)
+function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
+  return {
+    ...columns,
+    [oldStatusId]: columns[oldStatusId].filter((t) => t.id !== ticket.id),
+    [newStatusId]: [
+      ...(columns[newStatusId] ?? []),
+      { ...ticket, status: newStatusId },
+    ],
+  };
+}
+
+// Rollback si l'API échoue
+  function rollbackTicket(columns, ticket, oldStatusId, newStatusId) {
+    return {
+      ...columns,
+      [newStatusId]: columns[newStatusId].filter((t) => t.id !== ticket.id),
+      [oldStatusId]: [
+        ...(columns[oldStatusId] ?? []),
+        ticket,
+      ],
+    };
+  }
   const handleDrop = async (e, newStatusId) => {
     e.preventDefault();
     if (!dragging || dragging.status === newStatusId) {
@@ -58,6 +113,13 @@ export default function KanbanPage() {
     setDragging(null);
     try {
       await updateTicketStatus(dragging.id, newStatusId);
+
+      await saveTicketStatusHistory({
+        ticketId:   dragging.id,
+        ticketName: dragging.name,
+        oldStatus:  oldStatusId,
+        newStatus:  newStatusId,
+      });
     } catch {
       setColumns((prev) => rollbackTicket(prev, dragging, oldStatusId, newStatusId));
       alert('Erreur lors du changement de statut.');
@@ -78,11 +140,34 @@ export default function KanbanPage() {
       {/* Header */}
       <div className="kanban-header">
         <h1 className="kanban-title">Tickets — Vue Kanban</h1>
+
+        {/* Sélecteur de langue */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label style={{ fontSize: 13, color: '#6b7280' }}>Langue :</label>
+          <select
+            value={currentLang}
+            onChange={(e) => handleLangChange(e.target.value)}
+            style={{
+              padding: '5px 10px', borderRadius: 7,
+              border: '1px solid #d1d5db', fontSize: 13,
+              background: '#fff', cursor: 'pointer',
+            }}
+          >
+            {languages.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang === 'fr' ? '🇫🇷 Français'
+                  : lang === 'mg' ? '🇲🇬 Malagasy'
+                  : lang === 'en' ? '🇬🇧 English'
+                  : lang}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Board */}
       <div className="kanban-board">
-        {KANBAN_STATUSES.map((status) => (
+        {statusesWithLabels.map((status) => (
           <KanbanColumn
             key={status.id}
             status={status}
@@ -108,7 +193,9 @@ export default function KanbanPage() {
               <h2 className="modal-header-title">Nouveau ticket</h2>
               <button className="modal-close-btn" onClick={handleCloseAddModal}>×</button>
             </div>
-            <CreateTicket />
+            <div className="modal-body" style={{ padding: 20 }}>
+              <CreateTicket onSuccess={handleCloseAddModal} />
+            </div>
           </div>
         </div>
       )}
@@ -118,6 +205,7 @@ export default function KanbanPage() {
         <TicketDetail
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
+          statusLabels={labels}
         />
       )}
     </div>

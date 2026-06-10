@@ -6,6 +6,7 @@ import Dashboard from './pages/backoffice/dashboard/DashBoard';
 import BackOfficeLayout from './components/BackOfficeLayout';
 import ImportPage from './pages/backoffice/import/ImportPage';
 import Tickets from './pages/backoffice/tickets/Tickets';
+import KanbanSettingsPage from './pages/backoffice/settings/KanbanSettingsPage';
 
 import Element from './pages/frontoffice/elements/Element';
 import CreateTicket from './pages/frontoffice/tickets/CreateTicket';
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="import" element={<ImportPage />} />
             <Route path="assets" element={<Assets />} />
             <Route path="tickets" element={<Tickets />} />
+            <Route path="kanban" element={<KanbanSettingsPage />} />
           </Route>
 
           {/* ── Fallback ── */}
