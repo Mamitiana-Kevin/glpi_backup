@@ -5,11 +5,12 @@ import Reset from './pages/backoffice/reset/Reset';
 import Dashboard from './pages/backoffice/dashboard/DashBoard';
 import BackOfficeLayout from './components/BackOfficeLayout';
 import ImportPage from './pages/backoffice/import/ImportPage';
+import Tickets from './pages/backoffice/tickets/Tickets';
 
 import Element from './pages/frontoffice/elements/Element';
 import CreateTicket from './pages/frontoffice/tickets/CreateTicket';
+import KanbanPage from './pages/frontoffice/tickets/KanbanPage';
 import FrontOfficeLayout from './components/FrontOfficeLayout';
-import Tickets from './pages/backoffice/tickets/Tickets';
 
 const Assets = () => <div><h2>Gestion du matériel informatique</h2></div>;
 
@@ -31,6 +32,7 @@ export default function App() {
             <Route index element={<Navigate to="elements" replace />} />
             <Route path="elements" element={<Element />} />
             <Route path="/frontoffice/create-ticket" element={<CreateTicket />} />
+            <Route path="/frontoffice/kanban" element={<KanbanPage />} />
             {/* <Route path="create-ticket" element={<CreateTicket />} /> */}
           </Route>
 

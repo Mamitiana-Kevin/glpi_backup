@@ -35,6 +35,11 @@ export default function FrontOfficeLayout() {
             <span className="icon">🎫</span>
             {!isCollapsed && <span className="label">Créer un Ticket</span>}
           </Link>
+
+          <Link to="/frontoffice/kanban" className="menu-item">
+            <span className="icon">✅</span>
+            {!isCollapsed && <span className="label">Gestion des Tickets</span>}
+          </Link>
           
           <Link to="/dashboard" className="menu-item">
             <span className="icon">📊</span>

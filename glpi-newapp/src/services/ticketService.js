@@ -117,3 +117,84 @@ export async function fetchTicketDetails(ticketId) {
 
   return { ...ticket, linked_items: items };
 }
+
+// ── Fonctions Kanban ─────────────────────────────────────────────
+
+export const KANBAN_STATUSES = [
+  { id: 1, label: 'Nouveau',  color: '#3b82f6' },
+  { id: 2, label: 'En cours', color: '#f59e0b' },
+  { id: 5, label: 'Résolu',   color: '#16a34a' },
+];
+
+// Récupérer les tickets groupés par statut
+// Récupérer les tickets groupés par statut — Legacy V1
+export async function fetchKanbanTickets() {
+  const results = await Promise.all(
+    KANBAN_STATUSES.map(async (status) => {
+      try {
+        const response = await Legacy.get('/Ticket', {
+          'searchText[status]': status.id,
+          is_deleted: 0,
+          limit: 100,
+          sort: 'id',
+          order: 'DESC',
+        });
+
+        const items = Array.isArray(response.data) ? response.data : [];
+
+        return {
+          statusId: status.id,
+          tickets: items.map((t) => ({
+            id:       t.id,
+            name:     t.name ?? '—',
+            content:  t.content ?? '',
+            status:   t.status,
+            type:     t.type,
+            priority: t.priority,
+            urgency:  t.urgency,
+            date:     t.date_creation,
+          })),
+        };
+      } catch {
+        return { statusId: status.id, tickets: [] };
+      }
+    })
+  );
+
+  return results.reduce((acc, { statusId, tickets }) => {
+    acc[statusId] = tickets;
+    return acc;
+  }, {});
+}
+// Changer statut via Legacy
+export async function updateTicketStatus(ticketId, newStatus) {
+  const response = await Legacy.put(`/Ticket/${ticketId}`, {
+    status: newStatus,
+  });
+  console.log('Update Ticket Status:', response.data, newStatus);
+  return response.data;
+}
+
+// Mise à jour optimiste de l'UI (pas d'appel API)
+export function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
+  return {
+    ...columns,
+    [oldStatusId]: columns[oldStatusId].filter((t) => t.id !== ticket.id),
+    [newStatusId]: [
+      ...(columns[newStatusId] ?? []),
+      { ...ticket, status: newStatusId },
+    ],
+  };
+}
+
+// Rollback si l'API échoue
+export function rollbackTicket(columns, ticket, oldStatusId, newStatusId) {
+  return {
+    ...columns,
+    [newStatusId]: columns[newStatusId].filter((t) => t.id !== ticket.id),
+    [oldStatusId]: [
+      ...(columns[oldStatusId] ?? []),
+      ticket,
+    ],
+  };
+}
