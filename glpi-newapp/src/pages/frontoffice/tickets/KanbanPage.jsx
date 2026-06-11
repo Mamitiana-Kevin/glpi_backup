@@ -1,15 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-fetchKanbanTickets,
-  updateTicketStatus,
-  KANBAN_STATUSES,
-} from '../../../services/ticketService';
-import {
-  fetchKanbanSettings,
-  extractColors,
-  extractLabels,
-  extractAvailableLanguages,
-} from '../../../services/backend/kanbanSettingsService';
+import { fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES,} from '../../../services/ticketService';
+import { fetchKanbanSettings, extractColors } from '../../../services/backend/kanbanSettingsService';
+import { fetchAllLanguages, fetchLanguage, } from '../../../services/backend/kanbanLanguageService';
+
 import KanbanColumn from '../../../components/KanbanColumn';
 import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
@@ -35,20 +28,31 @@ export default function KanbanPage() {
     label: labels[s.id] ?? s.label, // ← remplace par la traduction
   }));
 
-  
+    
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [ticketData, settings] = await Promise.all([
+      const [ticketData, settings, allLanguages] = await Promise.all([
         fetchKanbanTickets(),
         fetchKanbanSettings().catch(() => ({})),
+        fetchAllLanguages().catch(() => ({ fr: { 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' } })),
       ]);
+
       setColumns(ticketData);
       setColors(extractColors(settings));
-      setLabels(extractLabels(settings, currentLang));
-      setLanguages(extractAvailableLanguages(settings));
-    } catch {
+
+      const codes = Object.keys(allLanguages);
+      setLanguages(codes.length > 0 ? codes : ['fr']);
+
+      // Labels de la langue courante
+      const currentLabels = allLanguages[currentLang]
+        ?? allLanguages['fr']
+        ?? { 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' };
+      setLabels(currentLabels);
+
+    } catch (err) {
+      console.error('Erreur load:', err);
       setError('Impossible de charger les tickets.');
     } finally {
       setLoading(false);
@@ -57,13 +61,14 @@ export default function KanbanPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Changer de langue sans recharger les tickets
   const handleLangChange = async (lang) => {
     setCurrentLang(lang);
     try {
-      const settings = await fetchKanbanSettings();
-      setLabels(extractLabels(settings, lang));
-    } catch {}
+      const labels = await fetchLanguage(lang);
+      setLabels(labels);
+    } catch {
+      // garder les labels actuels si erreur
+    }
   };
 
   useEffect(() => { load(); }, [load]);

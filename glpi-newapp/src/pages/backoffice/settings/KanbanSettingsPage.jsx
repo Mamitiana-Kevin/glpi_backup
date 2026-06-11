@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react';
-import {
-  fetchKanbanSettings,
-  saveKanbanSettings,
-  extractColors,
-  extractLabels,
-  extractAvailableLanguages,
-} from '../../../services/backend/kanbanSettingsService';
-
+import { fetchKanbanSettings, saveKanbanSettings, extractColors, } from '../../../services/backend/kanbanSettingsService';
+import { fetchAllLanguages, saveLanguage, deleteLanguage, } from '../../../services/backend/kanbanLanguageService';
 const STATUS_IDS = [1, 2, 5];
 const STATUS_NAMES = { 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' };
 const LANG_NAMES = { fr: '🇫🇷 Français', mg: '🇲🇬 Malagasy', en: '🇬🇧 English' };
@@ -41,17 +35,17 @@ export default function KanbanSettingsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const settings = await fetchKanbanSettings();
+        const [settings, allLanguages] = await Promise.all([
+          fetchKanbanSettings(),
+          fetchAllLanguages().catch(() => ({})),
+        ]);
+
         setColors(extractColors(settings));
 
-        const langs = extractAvailableLanguages(settings);
-        setLanguages(langs);
+        const langs = Object.keys(allLanguages);
+        setLanguages(langs.length > 0 ? langs : ['fr']);
+        setLangLabels(allLanguages);
 
-        const labels = {};
-        langs.forEach((lang) => {
-          labels[lang] = extractLabels(settings, lang);
-        });
-        setLangLabels(labels);
       } catch {
         setError('Impossible de charger les paramètres.');
       } finally {
@@ -60,7 +54,6 @@ export default function KanbanSettingsPage() {
     };
     load();
   }, []);
-
   // ── Modifier couleur ──
   const handleColorChange = (statusId, value) => {
     setColors((prev) => ({ ...prev, [statusId]: value }));
@@ -75,17 +68,22 @@ export default function KanbanSettingsPage() {
   };
 
   // ── Supprimer une langue ──
-  const handleDeleteLang = (lang) => {
-    setLanguages((prev) => prev.filter((l) => l !== lang));
-    setLangLabels((prev) => {
-      const updated = { ...prev };
-      delete updated[lang];
-      return updated;
-    });
+  const handleDeleteLang = async (lang) => {
+    try {
+      await deleteLanguage(lang);
+      setLanguages((prev) => prev.filter((l) => l !== lang));
+      setLangLabels((prev) => {
+        const updated = { ...prev };
+        delete updated[lang];
+        return updated;
+      });
+    } catch {
+      setError(`Impossible de supprimer la langue "${lang}".`);
+    }
   };
 
   // ── Ajouter une nouvelle langue ──
-  const handleAddLang = () => {
+  const handleAddLang = async () => {
     const code = newLang.code.trim().toLowerCase();
     if (!code) {
       setError('Le code de la langue est obligatoire.');
@@ -96,23 +94,32 @@ export default function KanbanSettingsPage() {
       return;
     }
     if (!newLang.label_1 || !newLang.label_2 || !newLang.label_5) {
-      setError('Tous les labels sont obligatoires pour ajouter une langue.');
+      setError('Tous les labels sont obligatoires.');
       return;
     }
 
-    setLanguages((prev) => [...prev, code]);
-    setLangLabels((prev) => ({
-      ...prev,
-      [code]: {
+    try {
+      await saveLanguage(code, {
         1: newLang.label_1,
         2: newLang.label_2,
         5: newLang.label_5,
-      },
-    }));
-    setNewLang({ code: '', label_1: '', label_2: '', label_5: '' });
-    setError(null);
-  };
+      });
 
+      setLanguages((prev) => [...prev, code]);
+      setLangLabels((prev) => ({
+        ...prev,
+        [code]: {
+          1: newLang.label_1,
+          2: newLang.label_2,
+          5: newLang.label_5,
+        },
+      }));
+      setNewLang({ code: '', label_1: '', label_2: '', label_5: '' });
+      setError(null);
+    } catch {
+      setError(`Impossible d\'ajouter la langue "${code}".`);
+    }
+  };
   // ── Sauvegarder tout ──
   const handleSave = async () => {
     setSaving(true);
@@ -120,23 +127,23 @@ export default function KanbanSettingsPage() {
     setError(null);
 
     try {
-      // Construire le payload
-      const settings = {
-        // Couleurs
+      // 1. Sauvegarder les couleurs
+      await saveKanbanSettings({
         color_1: colors[1],
         color_2: colors[2],
         color_5: colors[5],
-      };
+      }, 'admin');
 
-      // Labels par langue
-      languages.forEach((lang) => {
+      // 2. Sauvegarder chaque langue
+      for (const lang of languages) {
         const labels = langLabels[lang] ?? {};
-        STATUS_IDS.forEach((id) => {
-          settings[`label_${id}_${lang}`] = labels[id] ?? '';
+        await saveLanguage(lang, {
+          1: labels[1] ?? '',
+          2: labels[2] ?? '',
+          5: labels[5] ?? '',
         });
-      });
+      }
 
-      await saveKanbanSettings(settings, 'admin');
       setSuccess('Paramètres sauvegardés avec succès !');
     } catch {
       setError('Erreur lors de la sauvegarde.');

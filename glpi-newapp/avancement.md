@@ -14,8 +14,8 @@ Projet d'évaluation consistant à créer une application externe (**NewApp**) e
 | Styling | CSS inline (pas de lib UI) |
 | Routing | react-router-dom |
 | HTTP | axios |
-| Backend local | Spring Boot (Java) — à venir |
-| Base de données locale | SQLite via JPA (Spring Boot) — à venir |
+| Backend local | Spring Boot (Java) ✅ |
+| Base de données locale | SQLite via JPA (Spring Boot) ✅ |
 | GLPI | 11.0.7 sur XAMPP (localhost) |
 
 ---
@@ -25,8 +25,8 @@ Projet d'évaluation consistant à créer une application externe (**NewApp**) e
 ```
 GLPI         → http://localhost/glpi          (XAMPP)
 React        → http://localhost:5173          (Vite dev server)
-Spring Boot  → http://localhost:8080          (à venir)
-SQLite       → glpi_data.db                   (géré par Spring Boot)
+Spring Boot  → http://localhost:8080          (actif ✅)
+SQLite       → glpi_data.db                   (géré par Spring Boot ✅)
 ```
 
 ---
@@ -42,6 +42,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    },
     proxy: {
       '/apirest': {
         target: 'http://localhost',
@@ -71,6 +76,15 @@ export default defineConfig({
           });
         },
       },
+      // Spring Boot
+      '/settings': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/history': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 });
@@ -80,6 +94,10 @@ Résultat :
 - `/api/token` → `http://localhost/glpi/api.php/token`
 - `/api/Ticket` → `http://localhost/glpi/api.php/Ticket`
 - `/apirest/initSession` → `http://localhost/glpi/apirest.php/initSession`
+- `/settings/kanban` → `http://localhost:8080/settings/kanban`
+- `/settings/languages` → `http://localhost:8080/settings/languages`
+- `/history/colors` → `http://localhost:8080/history/colors`
+- `/history/ticket-status` → `http://localhost:8080/history/ticket-status`
 
 ---
 
@@ -307,36 +325,47 @@ const { isConnected, login, logout, error, loading } = useAuth();
 ```
 src/
 ├── api/
-│   └── glpiClient.js          ← client V2 + V1 Legacy
+│   └── glpiClient.js              ← client V2 + V1 Legacy
 ├── context/
-│   └── AuthContext.jsx         ← gestion connexion
+│   └── AuthContext.jsx             ← gestion connexion
 ├── services/
-│   ├── dashboardService.js     ← stats assets + tickets ✓ FAIT
-│   ├── resetService.js         ← purge Legacy ✓ FAIT
-│   └── ticketService.js        ← gestion tickets (v2 + Legacy Kanban) ✓ FAIT
+│   ├── backend/                   ← appels vers Spring Boot (SQLite)
+│   │   ├── ticketService.js        ← saveTicketStatusHistory, fetchTicketStatusHistory
+│   │   └── kanbanLanguageService.js ← CRUD langues multilingues
+│   ├── dashboardService.js         ← stats assets + tickets ✓ FAIT
+│   ├── resetService.js             ← purge Legacy ✓ FAIT
+│   ├── elementService.js           ← fetchElements, ASSET_TYPES ✓ FAIT
+│   ├── kanbanSettingsService.js    ← fetchKanbanSettings, saveKanbanSettings, extractColors ✓ FAIT
+│   └── ticketService.js            ← fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES, createTicket ✓ FAIT
 ├── components/
-│   ├── BackOfficeLayout.jsx    ← layout sidebar + topbar ✓ FAIT
-│   ├── KanbanCard.jsx          ← carte ticket Kanban ✓ FAIT
-│   └── KanbanColumn.jsx        ← colonne statut Kanban ✓ FAIT
+│   ├── BackOfficeLayout.jsx        ← layout sidebar + topbar ✓ FAIT
+│   ├── KanbanCard.jsx              ← carte ticket Kanban ✓ FAIT
+│   ├── KanbanColumn.jsx            ← colonne statut Kanban ✓ FAIT
+│   └── kanban.css                  ← styles Kanban dédiés ✓ FAIT
 ├── pages/
-│   ├── Login.jsx               ← ✓ FAIT
+│   ├── Login.jsx                   ← ✓ FAIT
 │   ├── backoffice/
 │   │   ├── dashboard/
-│   │   │   └── DashBoard.jsx   ← ✓ FAIT
+│   │   │   └── DashBoard.jsx       ← ✓ FAIT
 │   │   ├── reset/
-│   │   │   └── Reset.jsx       ← ✓ FAIT (utilise Legacy V1)
+│   │   │   └── Reset.jsx           ← ✓ FAIT (utilise Legacy V1)
 │   │   ├── import/
-│   │   │   └── ImportPage.jsx  ← ✓ FAIT
-│   │   └── tickets/
-│   │       ├── Tickets.jsx     ← ✓ FAIT
-│   │       └── Tickets.css     ← ✓ FAIT
+│   │   │   └── ImportPage.jsx      ← ✓ FAIT
+│   │   ├── tickets/
+│   │   │   ├── Tickets.jsx         ← ✓ FAIT
+│   │   │   └── Tickets.css         ← ✓ FAIT
+│   │   └── settings/
+│   │       └── KanbanSettingsPage.jsx ← ✓ FAIT (couleurs + labels multilingues)
 │   └── frontoffice/
 │       ├── elements/
-│       │   └── Element.jsx      ← ✓ FAIT
+│       │   └── Element.jsx          ← ✓ FAIT
 │       └── tickets/
-│           ├── CreateTicket.jsx ← ✓ FAIT
-│           └── KanbanPage.jsx   ← vue Kanban des tickets ✓ FAIT
-└── App.jsx                     ← ✓ FAIT
+│           ├── CreateTicket.jsx     ← ✓ FAIT (accepte formData/onChange/formId)
+│           ├── KanbanPage.jsx       ← ✓ FAIT (Kanban + multilingue + multi-création)
+│           ├── KanbanColumn.jsx     ← ✓ FAIT
+│           ├── KanbanCard.jsx       ← ✓ FAIT
+│           └── TicketDetail.jsx     ← ✓ FAIT
+└── App.jsx                         ← ✓ FAIT
 ```
 
 ---
@@ -351,9 +380,12 @@ src/
 | Import CSV Tickets | ✅ Fait | Workflow en 2 étapes (Création puis MAJ Statut) |
 | Import Images (ZIP) | ✅ Fait | Upload multipart vers `/Document` |
 | Reset (Purge) | ✅ Fait | Protection des IDs système (2-6) et IDs <= 20 |
-| Vue Kanban (Tickets) | ✅ Fait | Gestion drag&drop par statut (Nouveau, En cours, Résolu) |
+| Vue Kanban (Tickets) | ✅ Fait | Drag&drop, multi-création, détail ticket, sélecteur de langue |
+| Spring Boot + SQLite | ✅ Fait | 3 tables : kanban_settings, kanban_color_history, ticket_status_history |
+| Paramètres Kanban | ✅ Fait | Couleurs + labels multilingues (table kanban_languages) |
+| Historique statuts tickets | ✅ Fait | Enregistré dans SQLite à chaque drag&drop |
+| Historique couleurs | ✅ Fait | Enregistré dans SQLite à chaque changement de couleur |
 | Documentation Technique | ✅ Fait | Création du fichier `documentation.md` |
-| Backend Spring Boot | ⏳ À FAIRE | Centralisation de la logique et stockage local |
 
 ---
 
@@ -389,9 +421,36 @@ src/
 ### Kanban des Tickets
 - **Vue Kanban** : Implémentation d'une page Kanban permettant de visualiser les tickets par colonnes de statut (Nouveau, En cours, Résolu).
 - **Drag & Drop** : Support du glisser-déposer pour changer le statut des tickets de manière fluide.
-- **Composants Dédiés** : Création de `KanbanCard` et `KanbanColumn` pour une structure modulaire et réutilisable.
-- **Optimisation UI** : Mise à jour optimiste de l'interface lors du déplacement d'un ticket, avec mécanisme de rollback en cas d'échec de l'API.
-- **Service Dédié** : Ajout de `fetchKanbanTickets` et `updateTicketStatus` dans `ticketService.js` utilisant l'API Legacy pour le filtrage et la mise à jour simplifiée des statuts.
+- **Composants Dédiés** : Création de `KanbanCard`, `KanbanColumn`, `TicketDetail` pour une structure modulaire et réutilisable. CSS dédié dans `kanban.css`.
+- **Optimisation UI** : Mise à jour optimiste de l'interface lors du déplacement d'un ticket, avec mécanisme de rollback en cas d'échec de l'API. Fonctions `moveTicketOptimistic` et `rollbackTicket` dans `ticketService.js`.
+- **Service Dédié** : Ajout de `fetchKanbanTickets`, `updateTicketStatus`, `KANBAN_STATUSES` dans `ticketService.js` utilisant l'API Legacy pour le filtrage et la mise à jour des statuts.
+- **Multi-création** : Le modal d'ajout permet de créer plusieurs tickets en même temps via un tableau de formulaires. Bouton "Ajouter une ligne" dans le modal. `CreateTicket` accepte désormais les props `formData`, `onChange`, `formId`.
+- **Bouton d'ajout dans colonne** : Le bouton "+ Ajouter 1 ticket" est dans le header de la colonne "Nouveau" via la prop `onAdd`.
+
+### Spring Boot + SQLite
+- **Projet initialisé** : Spring Boot 3.3 avec Tomcat embarqué, SQLite via `sqlite-jdbc` + `hibernate-community-dialects`.
+- **3 tables créées automatiquement** via `ddl-auto=update` :
+  - `kanban_settings` : couleurs uniquement, toujours INSERT jamais UPDATE, valeur courante = dernier INSERT par clé.
+  - `kanban_color_history` : historique des changements de couleur (old/new color, statusId, changedAt).
+  - `ticket_status_history` : historique des changements de statut des tickets lors des drag & drop (ticketId, ticketName, oldStatus, newStatus, changedAt).
+- **Endpoints Spring Boot** :
+  - `GET/POST /settings/kanban` → couleurs
+  - `GET /history/colors`, `GET /history/colors/{statusId}`, `DELETE /history/colors`
+  - `GET/POST /history/ticket-status`, `GET /history/ticket-status/{ticketId}`, `DELETE /history/ticket-status`
+- **Historique statuts** : À chaque drag & drop dans le Kanban, React appelle `saveTicketStatusHistory` (dans `services/backend/ticketService.js`) pour enregistrer le changement dans SQLite.
+
+### Multilingue Kanban (migration Option 1 → Option 2)
+- **Nouvelle table `kanban_languages`** : Remplace les clés `label_X_XX` dans `kanban_settings`. Contient `languageCode`, `statusId`, `label` avec contrainte unique sur `(languageCode, statusId)`.
+- **Nouveau service Spring Boot** : `KanbanLanguageService` + `KanbanLanguageController` avec endpoints :
+  - `GET /settings/languages` → toutes les langues `{ fr: {1:"Nouveau",...}, mg: {...} }`
+  - `GET /settings/languages/codes` → `["fr", "mg", "en"]`
+  - `GET /settings/languages/{code}` → labels d'une langue
+  - `POST /settings/languages` → ajouter/modifier une langue
+  - `DELETE /settings/languages/{code}` → supprimer (sauf fr)
+- **Nouveau service React** : `services/backend/kanbanLanguageService.js` pour tous les appels vers Spring Boot.
+- **`kanbanSettingsService.js` simplifié** : Ne gère plus que les couleurs (`fetchKanbanSettings`, `saveKanbanSettings`, `extractColors`). Les fonctions `extractLabels` et `extractAvailableLanguages` ont été supprimées.
+- **Sélecteur de langue dans le Kanban** : `KanbanPage` charge toutes les langues au démarrage et recharge les labels à la volée lors d'un changement de langue sans recharger les tickets.
+- **Page paramètres Kanban** : `KanbanSettingsPage` (backoffice) permet de modifier les couleurs + gérer les langues (ajouter, modifier, supprimer). Le français ne peut pas être supprimé.
 
 ---
 
@@ -402,10 +461,55 @@ src/
 - **CORS / Proxy** : Configuration du proxy Vite pour rediriger `/api` et `/apirest` vers les bons scripts PHP de GLPI.
 - **Reset incomplet** : Certains types d'assets importés n'étaient pas ciblés par la purge. Corrigé en synchronisant `allAPI` dans `resetService.js`.
 - **Recherche Tickets inopérante** : Correction de la syntaxe RSQL et ajout d'un filtrage local de secours pour assurer la fiabilité de la recherche.
+- **Kanban colonnes toutes identiques** : Le filtre `status==X` de la V2 ne fonctionnait pas correctement. Corrigé en passant `fetchKanbanTickets` en Legacy avec `searchText[status]`.
+- **Hook invalide (Invalid hook call)** : Imports manquants de `fetchKanbanSettings`, `extractColors`, `extractLabels` dans `KanbanPage`. Corrigé en ajoutant les imports depuis `kanbanSettingsService`.
+- **Changement de langue sans effet** : `KANBAN_STATUSES` passé directement aux colonnes sans appliquer les labels traduits. Corrigé avec `statusesWithLabels = KANBAN_STATUSES.map(s => ({...s, label: labels[s.id] ?? s.label}))`.
+- **WebSocket HMR échoue** : Ajout de `hmr: { protocol: 'ws', host: 'localhost', port: 5173 }` dans `vite.config.js`.
 
 ---
 
-## Données à importer (Jour 1)
+## Backend Spring Boot
+
+### Configuration (`application.properties`)
+```properties
+spring.datasource.url=jdbc:sqlite:glpi_data.db
+spring.datasource.driver-class-name=org.sqlite.JDBC
+spring.jpa.database-platform=org.hibernate.community.dialect.SQLiteDialect
+spring.jpa.hibernate.ddl-auto=update
+server.port=8080
+```
+
+### Structure
+```
+src/main/java/com/glpi/
+├── model/
+│   ├── KanbanSetting.java         ← couleurs (INSERT only, jamais UPDATE)
+│   ├── KanbanColorHistory.java    ← historique changements couleur
+│   ├── KanbanLanguage.java        ← labels multilingues (INSERT ou UPDATE)
+│   └── TicketStatusHistory.java   ← historique changements statut tickets
+├── repository/
+│   ├── KanbanSettingRepository.java      ← findLatestByKey()
+│   ├── KanbanColorHistoryRepository.java
+│   ├── KanbanLanguageRepository.java     ← findByLanguageCode(), findDistinctLanguageCodes()
+│   └── TicketStatusHistoryRepository.java
+├── service/
+│   ├── KanbanSettingService.java         ← getCurrentSettings(), saveSettings()
+│   ├── KanbanColorHistoryService.java
+│   ├── KanbanLanguageService.java        ← getAll(), getByCode(), saveLanguage(), deleteLanguage()
+│   └── TicketStatusHistoryService.java   ← save(), getAll(), getByTicketId()
+└── controller/
+    ├── KanbanSettingsController.java      → GET/POST /settings/kanban
+    ├── KanbanColorHistoryController.java  → GET/DELETE /history/colors
+    ├── KanbanLanguageController.java      → GET/POST/DELETE /settings/languages
+    └── TicketStatusHistoryController.java → GET/POST/DELETE /history/ticket-status
+```
+
+### Lancer le backend
+```bash
+mvn spring-boot:run
+```
+
+---
 
 - 3 fichiers CSV : contenu du parc (lien Google Sheets fourni)
 - 1 fichier ZIP : images des éléments
@@ -449,8 +553,13 @@ src/
 ## Règles importantes à respecter
 
 1. **Toujours utiliser `get/post/put/del` (V2) sauf pour le Reset et le Kanban**
-2. **Ne jamais utiliser `Legacy.*` en dehors de `resetService.js` et des fonctions Kanban de `ticketService.js`**
+2. **`Legacy.*` uniquement dans `resetService.js` et fonctions Kanban de `ticketService.js`**
 3. **Toujours passer par le proxy Vite — ne jamais hardcoder `http://localhost/glpi`**
-4. **Les réponses sont en JSON — toujours lire `response.data`**
-5. **Pour compter les éléments — lire `response.headers['x-total-count']`**
+4. **Les réponses GLPI sont en JSON — toujours lire `response.data`**
+5. **Pour compter les éléments GLPI — lire `response.headers['content-range']` ou `x-total-count`**
 6. **Spring Boot gère SQLite — React ne touche jamais SQLite directement**
+7. **Les services dans `services/backend/` appellent Spring Boot (port 8080)**
+8. **Les autres services (`ticketService`, `elementService`, etc.) appellent GLPI**
+9. **`kanban_settings` : toujours INSERT jamais UPDATE — valeur courante = dernier INSERT**
+10. **`kanban_languages` : INSERT ou UPDATE — c'est une table de référence stable**
+11. **Le français (`fr`) ne peut jamais être supprimé des langues Kanban**
