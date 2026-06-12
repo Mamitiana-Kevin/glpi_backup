@@ -1,0 +1,9 @@
+Ref_Ticket,Date,Heure,Type,Titre,Description,Status,Priority,Items
+1,03/06/2026,13:45,Incident,Tsy mandeha,hafahafa be,New,Medium,"[""PC-ADM-001""]"
+2,04/06/2026,13:45,Incident,Michauffe,mamay be,New,Medium,"[""PC-ADM-001"" ""MN-FORM-002""]"
+3,05/06/2026,08:30,Incident,Mihantona,mitakona be,New,Medium,"[""PC-ADM-001"" ,""MN-FORM-002""]"
+
+4,06/06/2026,09:15,Demande,Fanavaozana,mila mampiditra rindrambaiko vaovao,Closed,Low,"["'PC-COMPTA-002'"]"
+5,07-06-2026,10:00,Incident,,tapaka foana ny connexion,In progress (assigned),Medium,"[""PC-LAB-001""]"
+6,05/06/2026,08:30,Incident,Mihantona,mitakona be,New,Medium,"[""]"
+7,07-06-2026,10:00,Incident,,tapaka foana ny connexion,In progress (assigned),Medium,[]

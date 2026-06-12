@@ -48,6 +48,5 @@ public interface KanbanSettingRepository extends JpaRepository<KanbanSetting, Lo
      * ORDER BY created_at DESC
      * LIMIT 1
      */
-    @Query("SELECT s FROM KanbanSetting s WHERE s.key = :key ORDER BY s.createdAt DESC")
-    Optional<KanbanSetting> findLatestByKey(String key);
+    Optional<KanbanSetting> findTop1BySettingKeyOrderByCreatedAtDesc(String key);
 }

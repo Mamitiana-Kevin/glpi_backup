@@ -58,11 +58,19 @@ public class KanbanLanguageController {
         String code = (String) body.get("code");
 
         @SuppressWarnings("unchecked")
-        Map<String, String> rawLabels = (Map<String, String>) body.get("labels");
+        Map<Object, String> rawLabels = (Map<Object, String>) body.get("labels");
 
-        // Convertir les clés String en Integer
+        // Convertir les clés en Integer
         Map<Integer, String> labels = new java.util.HashMap<>();
-        rawLabels.forEach((k, v) -> labels.put(Integer.parseInt(k), v));
+        rawLabels.forEach((k, v) -> {
+            Integer statusId;
+            if (k instanceof Integer) {
+                statusId = (Integer) k;
+            } else {
+                statusId = Integer.parseInt(k.toString());
+            }
+            labels.put(statusId, v);
+        });
 
         return ResponseEntity.ok(service.saveLanguage(code, labels));
     }

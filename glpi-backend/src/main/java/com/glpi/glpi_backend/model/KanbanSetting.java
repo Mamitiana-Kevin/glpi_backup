@@ -36,8 +36,8 @@ public class KanbanSetting {
     private Long id;
 
     // Clé du paramètre (ex: "color_1", "label_1")
-    @Column(nullable = false)
-    private String key;
+    @Column(name = "key", nullable = false)
+    private String settingKey;
 
     // Valeur du paramètre (ex: "#3b82f6", "Vaovao")
     @Column(nullable = false)

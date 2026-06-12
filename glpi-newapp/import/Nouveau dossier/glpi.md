@@ -1,9 +1,5 @@
 Je veux que tu développes cette fonctionnalité directement dans le projet :
 
-ajouter une page qui va lister le cout comme dans le vrai glpi pour un ticket choisi.
-et en bas un bouton exporter pour avenyer le cout vers sqlite database.
-il faut creer une table sqlite qui va stocker le cout.
-et faire un endpoint dans le backend pour exporter le cout vers sqlite database.
 
 
 RÈGLE 1 — ZÉRO COMMENTAIRE

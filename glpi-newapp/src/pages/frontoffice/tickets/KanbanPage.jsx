@@ -8,6 +8,7 @@ import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
 import '../../../components/kanban.css';
 import { saveTicketStatusHistory } from '../../../services/backend/ticketService';
+import { saveSuperCost } from '../../../services/backend/ticketSuperCostService';
 
 export default function KanbanPage() {
   const [columns,        setColumns]        = useState({ 1: [], 2: [], 5: [] });
@@ -16,6 +17,9 @@ export default function KanbanPage() {
   const [dragging,       setDragging]       = useState(null);
   const [showAddModal,   setShowAddModal]   = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showCostModal,  setShowCostModal]  = useState(false);
+  const [costTicket,     setCostTicket]     = useState(null);
+  const [superCost,      setSuperCost]      = useState('');
 
   // Settings depuis SQLite
   const [colors,      setColors]      = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
@@ -125,9 +129,30 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
         oldStatus:  oldStatusId,
         newStatus:  newStatusId,
       });
+
+      if (newStatusId === 5) {
+        setCostTicket(dragging);
+        setShowCostModal(true);
+      }
     } catch {
       setColumns((prev) => rollbackTicket(prev, dragging, oldStatusId, newStatusId));
       alert('Erreur lors du changement de statut.');
+    }
+  };
+
+  const handleSaveCost = async () => {
+    if (!superCost || isNaN(parseFloat(superCost))) {
+      alert('Veuillez entrer un coût valide.');
+      return;
+    }
+
+    try {
+      await saveSuperCost(costTicket.id, parseFloat(superCost));
+      setShowCostModal(false);
+      setCostTicket(null);
+      setSuperCost('');
+    } catch {
+      alert('Erreur lors de la sauvegarde du coût.');
     }
   };
 
@@ -212,6 +237,49 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
           onClose={() => setSelectedTicket(null)}
           statusLabels={labels}
         />
+      )}
+
+      {/* Modal Coût */}
+      {showCostModal && costTicket && (
+        <div className="modal-overlay" onClick={() => setShowCostModal(false)}>
+          <div
+            className="modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2 className="modal-header-title">Coût du ticket</h2>
+              <button className="modal-close-btn" onClick={() => setShowCostModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: 20 }}>
+              <p style={{ marginBottom: 16 }}>Ticket : {costTicket.name}</p>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>Super Coût</label>
+                <input
+                  type="number"
+                  value={superCost}
+                  onChange={(e) => setSuperCost(e.target.value)}
+                  placeholder="Entrez le coût"
+                  style={{
+                    width: '100%', padding: '8px 12px',
+                    border: '1px solid #d1d5db', borderRadius: 6,
+                    fontSize: 14
+                  }}
+                />
+              </div>
+              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleSaveCost}
+                  style={{
+                    padding: '8px 16px', background: '#2563eb', color: '#fff',
+                    border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14
+                  }}
+                >
+                  Sauvegarder
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

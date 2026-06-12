@@ -34,7 +34,7 @@ public class KanbanSettingService {
     public Map<String, String> getCurrentSettings() {
         Map<String, String> result = new HashMap<>(DEFAULTS);
         for (String key : DEFAULTS.keySet()) {
-            settingRepository.findLatestByKey(key)
+            settingRepository.findTop1BySettingKeyOrderByCreatedAtDesc(key)
                 .ifPresent(s -> result.put(key, s.getValue()));
         }
         return result;
@@ -51,7 +51,7 @@ public class KanbanSettingService {
             if (!key.startsWith("color_")) continue;
 
             KanbanSetting setting = new KanbanSetting();
-            setting.setKey(key);
+            setting.setSettingKey(key);
             setting.setValue(value);
             setting.setChangedBy(changedBy != null ? changedBy : "admin");
             settingRepository.save(setting);
