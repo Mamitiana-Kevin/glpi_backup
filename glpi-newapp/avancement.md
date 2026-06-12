@@ -470,43 +470,425 @@ src/
 
 ## Backend Spring Boot
 
+### Stack technique backend
+
+| Élément | Détail |
+|---|---|
+| Framework | Spring Boot **4.0.6** |
+| Langage | Java **17** |
+| Packaging | **WAR** (déployable sur Tomcat externe) |
+| Persistence | Spring Data JPA + Hibernate |
+| Base de données | **SQLite** via `sqlite-jdbc 3.45.1.0` |
+| Dialecte | `org.hibernate.community.dialect.SQLiteDialect` |
+| Boilerplate | **Lombok** (`@Data`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@RequiredArgsConstructor`) |
+| Point d'entrée | `GlpiBackendApplication.java` + `ServletInitializer.java` (WAR) |
+
 ### Configuration (`application.properties`)
 ```properties
+# SQLite
 spring.datasource.url=jdbc:sqlite:glpi_data.db
 spring.datasource.driver-class-name=org.sqlite.JDBC
 spring.jpa.database-platform=org.hibernate.community.dialect.SQLiteDialect
 spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# Port
 server.port=8080
+
+# CORS pour React
+spring.web.cors.allowed-origins=http://localhost:5173
 ```
 
-### Structure
+> `ddl-auto=update` : Hibernate crée/met à jour automatiquement les tables au démarrage. Aucun script SQL manuel.
+
+---
+
+### Structure complète des fichiers
+
 ```
-src/main/java/com/glpi/
-├── model/
-│   ├── KanbanSetting.java         ← couleurs (INSERT only, jamais UPDATE)
-│   ├── KanbanColorHistory.java    ← historique changements couleur
-│   ├── KanbanLanguage.java        ← labels multilingues (INSERT ou UPDATE)
-│   └── TicketStatusHistory.java   ← historique changements statut tickets
-├── repository/
-│   ├── KanbanSettingRepository.java      ← findLatestByKey()
-│   ├── KanbanColorHistoryRepository.java
-│   ├── KanbanLanguageRepository.java     ← findByLanguageCode(), findDistinctLanguageCodes()
-│   └── TicketStatusHistoryRepository.java
-├── service/
-│   ├── KanbanSettingService.java         ← getCurrentSettings(), saveSettings()
-│   ├── KanbanColorHistoryService.java
-│   ├── KanbanLanguageService.java        ← getAll(), getByCode(), saveLanguage(), deleteLanguage()
-│   └── TicketStatusHistoryService.java   ← save(), getAll(), getByTicketId()
-└── controller/
-    ├── KanbanSettingsController.java      → GET/POST /settings/kanban
-    ├── KanbanColorHistoryController.java  → GET/DELETE /history/colors
-    ├── KanbanLanguageController.java      → GET/POST/DELETE /settings/languages
-    └── TicketStatusHistoryController.java → GET/POST/DELETE /history/ticket-status
+glpi-backend/
+├── pom.xml                              ← dépendances Maven
+├── glpi_data.db                         ← base SQLite (auto-générée)
+└── src/
+    ├── main/
+    │   ├── java/com/glpi/glpi_backend/
+    │   │   ├── GlpiBackendApplication.java    ← @SpringBootApplication, main()
+    │   │   ├── ServletInitializer.java        ← extends SpringBootServletInitializer (WAR)
+    │   │   ├── model/
+    │   │   │   ├── KanbanSetting.java
+    │   │   │   ├── KanbanColorHistory.java
+    │   │   │   ├── KanbanLanguage.java
+    │   │   │   └── TicketStatusHistory.java
+    │   │   ├── repository/
+    │   │   │   ├── KanbanSettingRepository.java
+    │   │   │   ├── KanbanColorHistoryRepository.java
+    │   │   │   ├── KanbanLanguageRepository.java
+    │   │   │   └── TicketStatusHistoryRepository.java
+    │   │   ├── service/
+    │   │   │   ├── KanbanSettingService.java
+    │   │   │   ├── KanbanColorHistoryService.java
+    │   │   │   ├── KanbanLanguageService.java
+    │   │   │   └── TicketStatusHistoryService.java
+    │   │   └── controller/
+    │   │       ├── KanbanSettingsController.java
+    │   │       ├── KanbanColorHistoryController.java
+    │   │       ├── KanbanLanguageController.java
+    │   │       └── TicketStatusHistoryController.java
+    │   └── resources/
+    │       └── application.properties
+    └── test/
+```
+
+---
+
+### Couche Model (Entités JPA)
+
+Les entités sont annotées `@Entity` + `@Table` et mappées automatiquement vers des tables SQLite.
+Lombok génère `get/set/equals/hashCode/toString` via `@Data`, et les constructeurs via `@NoArgsConstructor`/`@AllArgsConstructor`.
+
+#### `KanbanSetting.java` → table `kanban_settings`
+
+**Règle critique : jamais d'UPDATE, toujours INSERT.**
+La valeur courante d'une clé = le dernier INSERT (ORDER BY createdAt DESC LIMIT 1).
+
+```java
+@Entity @Table(name = "kanban_settings")
+public class KanbanSetting {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String key;        // ex: "color_1", "color_2", "color_5"
+
+    @Column(nullable = false)
+    private String value;      // ex: "#3b82f6"
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;  // auto-rempli par @PrePersist
+
+    @Column(nullable = false)
+    private String changedBy;  // ex: "admin"
+
+    @PrePersist
+    public void prePersist() { this.createdAt = LocalDateTime.now(); }
+}
+```
+
+Clés utilisées : `color_1` (Nouveau), `color_2` (En cours), `color_5` (Résolu).
+
+---
+
+#### `KanbanColorHistory.java` → table `kanban_color_history`
+
+Enregistre chaque changement de couleur avec l'ancienne et la nouvelle valeur.
+
+```java
+@Entity @Table(name = "kanban_color_history")
+public class KanbanColorHistory {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Integer statusId;  // 1, 2 ou 5
+    private String oldColor;   // ex: "#3b82f6"
+    private String newColor;   // ex: "#ef4444"
+    private LocalDateTime changedAt;  // auto @PrePersist
+    private String changedBy;
+}
+```
+
+---
+
+#### `KanbanLanguage.java` → table `kanban_languages`
+
+Table de référence stable pour les labels multilingues.
+**Contrairement à KanbanSetting : INSERT ou UPDATE selon l'existence.**
+Contrainte unique sur `(language_code, status_id)`.
+
+```java
+@Entity
+@Table(name = "kanban_languages",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"language_code", "status_id"}))
+public class KanbanLanguage {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "language_code", nullable = false)
+    private String languageCode;  // ex: "fr", "mg", "en"
+
+    @Column(name = "status_id", nullable = false)
+    private Integer statusId;     // 1, 2 ou 5
+
+    @Column(nullable = false)
+    private String label;         // ex: "Vaovao"
+}
+```
+
+---
+
+#### `TicketStatusHistory.java` → table `ticket_status_history`
+
+Enregistré à chaque drag & drop dans le Kanban.
+
+```java
+@Entity @Table(name = "ticket_status_history")
+public class TicketStatusHistory {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Integer ticketId;    // ID ticket dans GLPI
+    private String ticketName;   // Nom du ticket (dénormalisé pour lisibilité)
+    private Integer oldStatus;   // Ancien statut GLPI
+    private Integer newStatus;   // Nouveau statut GLPI
+    private LocalDateTime changedAt;  // auto @PrePersist
+}
+```
+
+---
+
+### Couche Repository (Spring Data JPA)
+
+Chaque repository étend `JpaRepository<Entité, Long>` — Spring génère automatiquement les requêtes SQL à partir des noms de méthodes.
+
+#### `KanbanSettingRepository`
+
+```java
+@Repository
+public interface KanbanSettingRepository extends JpaRepository<KanbanSetting, Long> {
+
+    // SELECT * FROM kanban_settings WHERE key = ? ORDER BY created_at DESC LIMIT 1
+    @Query("SELECT s FROM KanbanSetting s WHERE s.key = :key ORDER BY s.createdAt DESC")
+    Optional<KanbanSetting> findLatestByKey(String key);
+}
+```
+
+#### `KanbanColorHistoryRepository`
+
+```java
+@Repository
+public interface KanbanColorHistoryRepository extends JpaRepository<KanbanColorHistory, Long> {
+
+    // SELECT * FROM kanban_color_history WHERE status_id = ? ORDER BY changed_at DESC
+    List<KanbanColorHistory> findByStatusIdOrderByChangedAtDesc(Integer statusId);
+
+    // SELECT * FROM kanban_color_history ORDER BY changed_at DESC
+    List<KanbanColorHistory> findAllByOrderByChangedAtDesc();
+}
+```
+
+#### `KanbanLanguageRepository`
+
+```java
+@Repository
+public interface KanbanLanguageRepository extends JpaRepository<KanbanLanguage, Long> {
+
+    // SELECT * FROM kanban_languages WHERE language_code = ?
+    List<KanbanLanguage> findByLanguageCode(String languageCode);
+
+    // SELECT * FROM kanban_languages WHERE language_code = ? AND status_id = ?
+    Optional<KanbanLanguage> findByLanguageCodeAndStatusId(String languageCode, Integer statusId);
+
+    // SELECT DISTINCT language_code FROM kanban_languages
+    @Query("SELECT DISTINCT k.languageCode FROM KanbanLanguage k")
+    List<String> findDistinctLanguageCodes();
+
+    // DELETE FROM kanban_languages WHERE language_code = ?
+    void deleteByLanguageCode(String languageCode);
+}
+```
+
+#### `TicketStatusHistoryRepository`
+
+```java
+@Repository
+public interface TicketStatusHistoryRepository extends JpaRepository<TicketStatusHistory, Long> {
+
+    // SELECT * FROM ticket_status_history WHERE ticket_id = ? ORDER BY changed_at DESC
+    List<TicketStatusHistory> findByTicketIdOrderByChangedAtDesc(Integer ticketId);
+
+    // SELECT * FROM ticket_status_history ORDER BY changed_at DESC
+    List<TicketStatusHistory> findAllByOrderByChangedAtDesc();
+}
+```
+
+---
+
+### Couche Service (Logique métier)
+
+#### `KanbanSettingService`
+
+Gère uniquement les **couleurs** (les labels sont dans `KanbanLanguageService`).
+
+```java
+@Service @RequiredArgsConstructor
+public class KanbanSettingService {
+
+    // Couleurs par défaut si aucun enregistrement en base
+    private static final Map<String, String> DEFAULTS = Map.of(
+        "color_1", "#3b82f6",  // bleu
+        "color_2", "#f59e0b",  // orange
+        "color_5", "#16a34a"   // vert
+    );
+
+    // Lit la valeur courante de chaque clé (= dernier INSERT)
+    public Map<String, String> getCurrentSettings() { ... }
+
+    // Sauvegarde via INSERT + enregistre dans KanbanColorHistory si couleur changée
+    public Map<String, String> saveSettings(Map<String, String> newSettings, String changedBy) {
+        // Pour chaque clé "color_X" reçue :
+        //   1. INSERT dans kanban_settings
+        //   2. Si valeur différente de l'ancienne → INSERT dans kanban_color_history
+    }
+}
+```
+
+#### `KanbanLanguageService`
+
+```java
+@Service @RequiredArgsConstructor
+public class KanbanLanguageService {
+
+    private static final List<Integer> STATUS_IDS = List.of(1, 2, 5);
+
+    // Labels français par défaut (fallback si pas en base)
+    private static final Map<Integer, String> FR_DEFAULTS = Map.of(
+        1, "Nouveau", 2, "En cours", 5, "Résolu"
+    );
+
+    // Retourne { "fr": {1:"Nouveau",...}, "mg": {1:"Vaovao",...} }
+    public Map<String, Map<Integer, String>> getAll() { ... }
+
+    // Retourne les labels d'une langue (fallback français si inconnue)
+    public Map<Integer, String> getByCode(String code) { ... }
+
+    // Retourne ["fr", "mg", "en"] — fr toujours en premier
+    public List<String> getAvailableCodes() { ... }
+
+    // INSERT si nouveau, UPDATE si existant (findByLanguageCodeAndStatusId)
+    @Transactional
+    public Map<Integer, String> saveLanguage(String code, Map<Integer, String> labels) { ... }
+
+    // Interdit pour "fr" → lance IllegalArgumentException
+    @Transactional
+    public void deleteLanguage(String code) { ... }
+}
+```
+
+#### `KanbanColorHistoryService`
+
+```java
+@Service @RequiredArgsConstructor
+public class KanbanColorHistoryService {
+    public List<KanbanColorHistory> getAll()                         // tout l'historique
+    public List<KanbanColorHistory> getByStatusId(Integer statusId)  // historique d'un statut
+    public void clearAll()                                           // vider la table
+}
+```
+
+#### `TicketStatusHistoryService`
+
+```java
+@Service @RequiredArgsConstructor
+public class TicketStatusHistoryService {
+    // Crée un enregistrement (appelé depuis React à chaque drag & drop)
+    public TicketStatusHistory save(Integer ticketId, String ticketName, Integer oldStatus, Integer newStatus)
+
+    public List<TicketStatusHistory> getAll()
+    public List<TicketStatusHistory> getByTicketId(Integer ticketId)
+    public void clearAll()
+}
+```
+
+---
+
+### Couche Controller (API REST)
+
+Tous les controllers sont annotés `@RestController` + `@CrossOrigin(origins = "http://localhost:5173")`.
+
+#### `KanbanSettingsController` — `/settings/kanban`
+
+| Méthode | URL | Description | Body / Réponse |
+|---|---|---|---|
+| `GET` | `/settings/kanban` | Couleurs actuelles | `{"color_1":"#3b82f6","color_2":"#f59e0b","color_5":"#16a34a"}` |
+| `POST` | `/settings/kanban` | Sauvegarder couleurs | `{"settings":{"color_1":"#ef4444"},"changedBy":"admin"}` |
+
+#### `KanbanLanguageController` — `/settings/languages`
+
+| Méthode | URL | Description | Réponse exemple |
+|---|---|---|---|
+| `GET` | `/settings/languages` | Toutes les langues | `{"fr":{1:"Nouveau",...},"mg":{1:"Vaovao",...}}` |
+| `GET` | `/settings/languages/codes` | Codes disponibles | `["fr","mg","en"]` |
+| `GET` | `/settings/languages/{code}` | Labels d'une langue | `{1:"Vaovao",2:"Efa manao",5:"Vita"}` |
+| `POST` | `/settings/languages` | Ajouter/modifier une langue | `{"code":"mg","labels":{"1":"Vaovao","2":"Efa manao","5":"Vita"}}` |
+| `DELETE` | `/settings/languages/{code}` | Supprimer une langue (sauf `fr`) | `204 No Content` ou `400` |
+
+#### `KanbanColorHistoryController` — `/history/colors`
+
+| Méthode | URL | Description |
+|---|---|---|
+| `GET` | `/history/colors` | Tout l'historique couleurs |
+| `GET` | `/history/colors/{statusId}` | Historique d'un statut |
+| `DELETE` | `/history/colors` | Vider l'historique |
+
+#### `TicketStatusHistoryController` — `/history/ticket-status`
+
+| Méthode | URL | Description | Body |
+|---|---|---|---|
+| `POST` | `/history/ticket-status` | Enregistrer un changement | `{"ticketId":5,"ticketName":"Pb réseau","oldStatus":1,"newStatus":2}` |
+| `GET` | `/history/ticket-status` | Tout l'historique | — |
+| `GET` | `/history/ticket-status/{ticketId}` | Historique d'un ticket | — |
+| `DELETE` | `/history/ticket-status` | Vider l'historique | — |
+
+---
+
+### Flux de données complet (React → Spring Boot → SQLite)
+
+```
+[Drag & Drop Kanban]
+    │
+    ├─► ticketService.js (React)
+    │     updateTicketStatus(id, newStatus)  → PUT Legacy API GLPI
+    │     saveTicketStatusHistory(...)       → POST /history/ticket-status
+    │
+    └─► TicketStatusHistoryController (Spring Boot)
+              │
+              ▼
+          TicketStatusHistoryService.save(...)
+              │
+              ▼
+          TicketStatusHistoryRepository.save(entity)
+              │
+              ▼
+          SQLite → INSERT INTO ticket_status_history (...)
+
+[Changement couleur Kanban]
+    │
+    ├─► kanbanSettingsService.js (React)
+    │     saveKanbanSettings({color_1:"#ef4444"})  → POST /settings/kanban
+    │
+    └─► KanbanSettingsController (Spring Boot)
+              │
+              ▼
+          KanbanSettingService.saveSettings(...)
+              ├── INSERT INTO kanban_settings (key="color_1", value="#ef4444")
+              └── INSERT INTO kanban_color_history (oldColor, newColor, ...)
+
+[Changement langue Kanban]
+    │
+    ├─► kanbanLanguageService.js (React)
+    │     saveLanguage("mg", {1:"Vaovao",...})  → POST /settings/languages
+    │
+    └─► KanbanLanguageController (Spring Boot)
+              │
+              ▼
+          KanbanLanguageService.saveLanguage(...)
+              └── INSERT OR UPDATE kanban_languages (language_code, status_id, label)
 ```
 
 ### Lancer le backend
 ```bash
+cd glpi-backend
 mvn spring-boot:run
+# Accessible sur http://localhost:8080
 ```
 
 ---
