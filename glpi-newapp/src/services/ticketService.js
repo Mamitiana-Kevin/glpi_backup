@@ -174,3 +174,38 @@ export async function updateTicketStatus(ticketId, newStatus) {
   console.log('Update Ticket Status:', response.data, newStatus);
   return response.data;
 }
+
+/**
+ * Calcule le coût GLPI total d'un ticket réparti par itemtype
+ * @param {number} ticketId
+ * @returns {Object} { Computer: 45.5, Phone: 45.5, ... }
+ */
+export async function fetchGlpiCostByItemtype(ticketId) {
+  // 1. Récupérer les items liés au ticket
+  const itemsRes = await Legacy.get(`/Ticket/${ticketId}/Item_Ticket`);
+  const items = Array.isArray(itemsRes.data) ? itemsRes.data : [];
+  if (items.length === 0) return {};
+
+  // 2. Récupérer les coûts GLPI du ticket
+  const costsRes = await Legacy.get(`/Ticket/${ticketId}/TicketCost`);
+  const costs = Array.isArray(costsRes.data) ? costsRes.data : [];
+  if (costs.length === 0) return {};
+
+  // 3. Sommer cost_fixed + cost_material + cost_time pour chaque entrée
+  const totalCost = costs.reduce((sum, c) => {
+    const heures = (parseFloat(c.actiontime) || 0) / 3600;
+    const coutTemps = heures * (parseFloat(c.cost_time) || 0);
+    return sum + (parseFloat(c.cost_fixed) || 0)
+              + (parseFloat(c.cost_material) || 0)
+              + coutTemps;
+  }, 0);
+
+  // 4. Répartir équitablement entre les items
+  const costPerItem = totalCost / items.length;
+  const result = {};
+  for (const item of items) {
+    result[item.itemtype] = (result[item.itemtype] || 0) + costPerItem;
+  }
+
+  return result;
+}

@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES,} from '../../../services/ticketService';
 import { fetchKanbanSettings, extractColors } from '../../../services/backend/kanbanSettingsService';
 import { fetchAllLanguages, fetchLanguage, } from '../../../services/backend/kanbanLanguageService';
+import { Legacy } from '../../../api/glpiClient';
 
 import KanbanColumn from '../../../components/KanbanColumn';
 import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
 import '../../../components/kanban.css';
 import { saveTicketStatusHistory } from '../../../services/backend/ticketService';
-import { saveSuperCost } from '../../../services/backend/ticketSuperCostService';
+import { fetchLastActiveCost, deactivateCost, saveCost } from '../../../services/backend/superCostService';
+import { saveTicketItems } from '../../../services/backend/ticketItemService';
 
 export default function KanbanPage() {
   const [columns,        setColumns]        = useState({ 1: [], 2: [], 5: [] });
@@ -18,8 +20,10 @@ export default function KanbanPage() {
   const [showAddModal,   setShowAddModal]   = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showCostModal,  setShowCostModal]  = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
   const [costTicket,     setCostTicket]     = useState(null);
   const [superCost,      setSuperCost]      = useState('');
+  const [reopenPercent,  setReopenPercent]  = useState('');
 
   // Settings depuis SQLite
   const [colors,      setColors]      = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
@@ -118,18 +122,27 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
       return;
     }
     const oldStatusId = dragging.status;
+    
+    // If moving FROM status 5 (resolved)
+    if (oldStatusId === 5) {
+      setCostTicket(dragging);
+      setShowReopenModal(true);
+      setDragging(null);
+      return;
+    }
+    
+    // Proceed with optimistic update
     setColumns((prev) => moveTicketOptimistic(prev, dragging, oldStatusId, newStatusId));
     setDragging(null);
     try {
       await updateTicketStatus(dragging.id, newStatusId);
-
       await saveTicketStatusHistory({
         ticketId:   dragging.id,
         ticketName: dragging.name,
         oldStatus:  oldStatusId,
         newStatus:  newStatusId,
       });
-
+      
       if (newStatusId === 5) {
         setCostTicket(dragging);
         setShowCostModal(true);
@@ -140,6 +153,37 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     }
   };
 
+  const handleReopen = async () => {
+    if (!reopenPercent || isNaN(parseFloat(reopenPercent)) || parseFloat(reopenPercent) < 0 || parseFloat(reopenPercent) > 100) {
+      alert('Veuillez entrer un pourcentage de réouverture valide (0-100).');
+      return;
+    }
+    
+    const ticket = costTicket;
+    const oldStatusId = 5;
+    const newStatusId = 2; // Back to "En cours"
+    setShowReopenModal(false);
+    
+    try {
+      await deactivateCost(ticket.id, parseFloat(reopenPercent));
+      await updateTicketStatus(ticket.id, newStatusId);
+      await saveTicketStatusHistory({
+        ticketId: ticket.id,
+        ticketName: ticket.name,
+        oldStatus: oldStatusId,
+        newStatus: newStatusId,
+      });
+      
+      // Reload to reflect changes
+      load();
+    } catch {
+      alert('Erreur lors de la réouverture.');
+    } finally {
+      setCostTicket(null);
+      setReopenPercent('');
+    }
+  };
+
   const handleSaveCost = async () => {
     if (!superCost || isNaN(parseFloat(superCost))) {
       alert('Veuillez entrer un coût valide.');
@@ -147,7 +191,29 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     }
 
     try {
-      await saveSuperCost(costTicket.id, parseFloat(superCost));
+      const amount = parseFloat(superCost);
+      const lastActive = await fetchLastActiveCost(costTicket.id);
+      let reopeningPct = null;
+      
+      if (lastActive) {
+        reopeningPct = lastActive.reopening_pct;
+      }
+      
+      await saveCost(costTicket.id, amount, reopeningPct);
+      
+      // Sync ticket items
+      try {
+        const itemsResponse = await Legacy.get('/Item_Ticket', { 'searchText[tickets_id]': costTicket.id });
+        const items = Array.isArray(itemsResponse.data) ? itemsResponse.data : [];
+        const formattedItems = items.map(item => ({
+          item_id: item.items_id,
+          itemtype: item.itemtype
+        }));
+        await saveTicketItems(costTicket.id, formattedItems);
+      } catch (err) {
+        console.error('Error syncing ticket items:', err);
+      }
+      
       setShowCostModal(false);
       setCostTicket(null);
       setSuperCost('');
@@ -275,6 +341,51 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
                   }}
                 >
                   Sauvegarder
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal Réouverture */}
+      {showReopenModal && costTicket && (
+        <div className="modal-overlay" onClick={() => setShowReopenModal(false)}>
+          <div
+            className="modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2 className="modal-header-title">Réouverture du ticket</h2>
+              <button className="modal-close-btn" onClick={() => setShowReopenModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: 20 }}>
+              <p style={{ marginBottom: 16 }}>Ticket : {costTicket.name}</p>
+              <div>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>Pourcentage de réouverture (0-100)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={reopenPercent}
+                  onChange={(e) => setReopenPercent(e.target.value)}
+                  placeholder="Entrez le pourcentage"
+                  style={{
+                    width: '100%', padding: '8px 12px',
+                    border: '1px solid #d1d5db', borderRadius: 6,
+                    fontSize: 14
+                  }}
+                />
+              </div>
+              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleReopen}
+                  style={{
+                    padding: '8px 16px', background: '#f59e0b', color: '#fff',
+                    border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14
+                  }}
+                >
+                  Réouvrir
                 </button>
               </div>
             </div>

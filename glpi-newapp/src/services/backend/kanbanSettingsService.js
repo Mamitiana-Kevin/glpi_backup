@@ -25,6 +25,14 @@ export async function saveKanbanSettings(settings, changedBy = 'admin') {
 }
 
 /**
+ * Récupère l'historique des changements de couleur.
+ */
+export async function fetchColorHistory() {
+  const response = await client.get('history/colors');
+  return response.data;
+}
+
+/**
  * Extrait les couleurs depuis les settings.
  * Retourne : { 1: "#3b82f6", 2: "#f59e0b", 5: "#16a34a" }
  */
@@ -36,10 +44,3 @@ export function extractColors(settings) {
   };
 }
 
-/**
- * Récupère l'historique des changements de couleur.
- */
-export async function fetchColorHistory() {
-  const response = await client.get('history/colors');
-  return response.data;
-}

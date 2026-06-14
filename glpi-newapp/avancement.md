@@ -329,14 +329,16 @@ src/
 ├── context/
 │   └── AuthContext.jsx             ← gestion connexion
 ├── services/
-│   ├── backend/                   ← appels vers Spring Boot (SQLite)
+│   ├── backend/                   ← appels vers Express (SQLite)
 │   │   ├── ticketService.js        ← saveTicketStatusHistory, fetchTicketStatusHistory
-│   │   └── kanbanLanguageService.js ← CRUD langues multilingues
+│   │   ├── kanbanLanguageService.js ← CRUD langues multilingues
+│   │   ├── kanbanSettingsService.js ← CRUD couleurs Kanban
+│   │   ├── superCostService.js     ← Super Cost, rapport par itemtype
+│   │   └── ticketItemService.js    ← Gestion des items de ticket
 │   ├── dashboardService.js         ← stats assets + tickets ✓ FAIT
 │   ├── resetService.js             ← purge Legacy ✓ FAIT
 │   ├── elementService.js           ← fetchElements, ASSET_TYPES ✓ FAIT
-│   ├── kanbanSettingsService.js    ← fetchKanbanSettings, saveKanbanSettings, extractColors ✓ FAIT
-│   └── ticketService.js            ← fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES, createTicket ✓ FAIT
+│   └── ticketService.js            ← fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES, createTicket, fetchGlpiCostByItemtype ✓ FAIT
 ├── components/
 │   ├── BackOfficeLayout.jsx        ← layout sidebar + topbar ✓ FAIT
 │   ├── KanbanCard.jsx              ← carte ticket Kanban ✓ FAIT
@@ -354,6 +356,8 @@ src/
 │   │   ├── tickets/
 │   │   │   ├── Tickets.jsx         ← ✓ FAIT
 │   │   │   └── Tickets.css         ← ✓ FAIT
+│   │   ├── costs/
+│   │   │   └── CostReportPage.jsx  ← ✓ FAIT (Rapport par itemtype)
 │   │   └── settings/
 │   │       └── KanbanSettingsPage.jsx ← ✓ FAIT (couleurs + labels multilingues)
 │   └── frontoffice/
@@ -361,7 +365,7 @@ src/
 │       │   └── Element.jsx          ← ✓ FAIT
 │       └── tickets/
 │           ├── CreateTicket.jsx     ← ✓ FAIT (accepte formData/onChange/formId)
-│           ├── KanbanPage.jsx       ← ✓ FAIT (Kanban + multilingue + multi-création)
+│           ├── KanbanPage.jsx       ← ✓ FAIT (Kanban + multilingue + multi-création + réouverture + super cost)
 │           ├── KanbanColumn.jsx     ← ✓ FAIT
 │           ├── KanbanCard.jsx       ← ✓ FAIT
 │           └── TicketDetail.jsx     ← ✓ FAIT
@@ -381,11 +385,14 @@ src/
 | Import Images (ZIP) | ✅ Fait | Upload multipart vers `/Document` |
 | Reset (Purge) | ✅ Fait | Protection des IDs système (2-6) et IDs <= 20 |
 | Vue Kanban (Tickets) | ✅ Fait | Drag&drop, multi-création, détail ticket, sélecteur de langue |
-| Spring Boot + SQLite | ✅ Fait | 3 tables : kanban_settings, kanban_color_history, ticket_status_history |
+| Spring Boot + SQLite | ✅ Fait | Migré vers Express.js + SQLite (6 tables) |
 | Paramètres Kanban | ✅ Fait | Couleurs + labels multilingues (table kanban_languages) |
 | Historique statuts tickets | ✅ Fait | Enregistré dans SQLite à chaque drag&drop |
 | Historique couleurs | ✅ Fait | Enregistré dans SQLite à chaque changement de couleur |
 | Documentation Technique | ✅ Fait | Création du fichier `documentation.md` |
+| Réouverture des Tickets | ✅ Fait | Modale pour saisir le % de réouverture, désactivation du coût |
+| Super Cost | ✅ Fait | Gestion des surcoûts, répartition par itemtype |
+| Rapport par Itemtype | ✅ Fait | Page CostReportPage avec coûts GLPI et Super Cost |
 
 ---
 
@@ -459,6 +466,55 @@ src/
 
 ---
 
+## Modifications récentes (14/06/2026)
+
+### Restructuration Backend Express
+- **Separation Logique / Routes** : Le backend a été restructuré en deux dossiers principaux :
+  1. **`services/`** : Toutes les requêtes SQL + logique métier regroupés par domaine (fichiers courts et autonomes).
+  2. **`routes/`** : Seulement les endpoints, qui appellent les services (aucune logique métier ici).
+- **Organisation des routes** : Les routes sont regroupées par fonctionnalité (kanban, history, ticket-super-cost, ticket-item) avec des `index.cjs` pour simplifier les imports.
+- **Facilité de copie** : Chaque fichier service est autonome et peut être copié facilement dans un autre projet.
+
+### Fonctionnalité Réouverture des Tickets
+- **Logique de réouverture** : Lorsque l'on déplace un ticket depuis "Résolu" vers un autre statut, une boîte de dialogue apparaît pour saisir le pourcentage de réouverture.
+- **Mise à jour SQLite** : La fonction `deactivateLastCost` dans `ticketSuperCost.cjs` désactive la ligne active (is_active = 0) et stocke le pourcentage de réouverture.
+- **Calcul du coût réel** : Lors de la prochaine résolution, le calcul `effective_cost` intègre le pourcentage de réouverture.
+
+### Refonte du Super Cost
+- **Table mise à jour** : La table `ticket_super_cost` a été modifiée pour supprimer `effective_cost` (calculé côté backend) et ajouter `is_active` (1 = coût courant, 0 = désactivé).
+- **Nouvelle table `ticket_item`** : Stocke la relation entre les tickets et les items (ticket_id, item_id, itemtype) pour permettre la répartition du coût par item.
+- **Service `ticketSuperCost.cjs`** :
+  - `getLastActiveCost(ticketId)` : Récupère la dernière ligne active
+  - `getLastInactiveCost(ticketId)` : Récupère la dernière ligne inactive
+  - `deactivateLastCost(ticketId, reopeningPct)` : Désactive la ligne active et stocke le pourcentage
+  - `insertCost(ticketId, amount, reopeningPct)` : Insère une nouvelle ligne active
+  - `getTotalReopeningCost(ticketId)` : Somme des effective_cost des lignes inactives
+  - `getCostReportByItemtype()` : Rapport groupé par itemtype (répartition des coûts par item)
+- **Service `ticketItem.cjs`** :
+  - `upsertTicketItems(ticketId, items)` : Insère ou ignore les items d'un ticket
+  - `getItemsByTicket(ticketId)` : Récupère les items d'un ticket
+  - `countItemsByTicket(ticketId)` : Compte le nombre d'items d'un ticket
+- **Routes mises à jour** : `/backend/ticket-super-cost/` et `/backend/ticket-item/`
+- **Frontend mis à jour** :
+  - `superCostService.js` : Appels aux nouveaux endpoints
+  - `ticketItemService.js` : Gestion des items de ticket
+  - `KanbanPage.jsx` : Modale de réouverture et synchronisation des items
+  - `CostReportPage.jsx` : Rapport par itemtype, avec coûts GLPI et Super Cost
+
+### Rapport par Itemtype
+- **Page CostReportPage** : Tableau avec 4 colonnes :
+  1. Element (itemtype)
+  2. Total coût GLPI (récupéré via GLPI API, réparti par item)
+  3. Super Cost (récupéré via SQLite, réparti par item)
+  4. Total coût réouverture (récupéré via SQLite)
+- **Calcul côté backend** : Les coûts sont déjà divisés par le nombre d'items par ticket pour optimiser le frontend.
+
+### Gestion des Erreurs
+- Ajout de try/catch dans les routes Express pour renvoyer des erreurs détaillées.
+- Console log dans le frontend pour débuguer les appels API.
+
+---
+
 ## Journal de bord des erreurs corrigées
 - **Erreur 400 (User creation)** : L'API Legacy attendait `name` au lieu de `login`. Corrigé.
 - **Erreur 404 (Ticket Update)** : Le `PUT` sur `/api/Assistance/Ticket/ID` échouait sur certaines versions. Corrigé en utilisant `Legacy.put('Ticket/ID', ...)`.
@@ -511,11 +567,39 @@ glpi-newapp/
     ├── server.cjs                 ← Point d'entrée principal (Middlewares, CORS, Routing)
     ├── db.cjs                     ← Connexion SQLite via sql.js et wrapper d'accès synchrone
     ├── glpi_data.db               ← Base SQLite persistante
-    └── routes/
-        ├── settings.cjs           ← Routes /backend/settings (Couleurs et Langues)
-        ├── history.cjs            ← Routes /backend/history (Historiques)
-        └── ticketSuperCost.cjs    ← Routes /backend/ticket-super-cost (Surcoûts)
+    ├── services/                  ← SQL + Logique Métier (tout dans un fichier)
+    │   ├── kanbanSettings.cjs     ← Logique et requêtes pour les paramètres Kanban
+    │   ├── kanbanLanguages.cjs    ← Logique et requêtes pour les langues Kanban
+    │   ├── kanbanColorsHistory.cjs ← Logique et requêtes pour l'historique des couleurs
+    │   ├── ticketStatusHistory.cjs ← Logique et requêtes pour l'historique des statuts
+    │   └── ticketSuperCost.cjs    ← Logique et requêtes pour les surcoûts
+    └── routes/                    ← Seulement les endpoints, pas de logique
+        ├── kanban/
+        │   ├── index.cjs
+        │   ├── settings.cjs       ← Routes /backend/kanban/settings
+        │   └── languages.cjs      ← Routes /backend/kanban/languages
+        ├── history/
+        │   ├── index.cjs
+        │   ├── colors.cjs         ← Routes /backend/history/colors
+        │   └── ticketStatus.cjs   ← Routes /backend/history/ticket-status
+        └── ticket-super-cost/
+            ├── index.cjs
+            └── superCost.cjs      ← Routes /backend/ticket-super-cost
 ```
+
+---
+
+### Structure Modulaire (Routes + Services)
+
+Pour faciliter la maintenance et la copie des fichiers, le backend a été restructuré en **deux dossiers** :
+1. **`services/`** : Contient toutes les requêtes SQL + la logique métier. Un fichier par domaine (100% autonome, facile à copier).
+2. **`routes/`** : Contient uniquement les définitions des endpoints. Chaque route appelle un service (aucune logique métier ici, très simple).
+
+**Principes clés :**
+- Toutes les requêtes SQL sont dans `services/`
+- Toutes les logiques métier (transactions, vérifications) sont dans `services/`
+- Les fichiers `routes/` ne font qu'appeler les services et renvoyer la réponse
+- Facile à diviser et à copier dans un autre projet
 
 ---
 
