@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: '/',
+  baseURL: '/backend',
   headers: { 'Content-Type': 'application/json' },
 });
 
 export async function saveSuperCost(ticketId, superCost) {
-  const response = await client.post('/ticket-super-cost', {
+  const response = await client.post('ticket-super-cost', {
     ticketId,
     superCost,
   });
@@ -14,6 +14,7 @@ export async function saveSuperCost(ticketId, superCost) {
 }
 
 export async function getTotalSuperCost() {
-  const response = await client.get('/ticket-super-cost/total');
+  const response = await client.get('ticket-super-cost/total');
   return response.data;
 }
+

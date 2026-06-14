@@ -43,15 +43,7 @@ export default defineConfig({
           });
         },
       },
-      '/settings': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/history': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/ticket-super-cost': {
+      '/backend': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },

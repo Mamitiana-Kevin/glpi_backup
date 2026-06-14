@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "backend/glpi_data.db*",
+    "node_modules"
+  ]
+}

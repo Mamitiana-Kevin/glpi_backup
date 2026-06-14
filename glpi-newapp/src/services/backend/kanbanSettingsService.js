@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: '/',
+  baseURL: '/backend',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -10,7 +10,7 @@ const client = axios.create({
  * Retourne : { color_1: "#3b82f6", color_2: "#f59e0b", color_5: "#16a34a" }
  */
 export async function fetchKanbanSettings() {
-  const response = await client.get('/settings/kanban');
+  const response = await client.get('settings/kanban');
   return response.data;
 }
 
@@ -20,7 +20,7 @@ export async function fetchKanbanSettings() {
  * @param changedBy identifiant utilisateur
  */
 export async function saveKanbanSettings(settings, changedBy = 'admin') {
-  const response = await client.post('/settings/kanban', { settings, changedBy });
+  const response = await client.post('settings/kanban', { settings, changedBy });
   return response.data;
 }
 
@@ -40,6 +40,6 @@ export function extractColors(settings) {
  * Récupère l'historique des changements de couleur.
  */
 export async function fetchColorHistory() {
-  const response = await client.get('/history/colors');
+  const response = await client.get('history/colors');
   return response.data;
-}
+}

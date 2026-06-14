@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: '/',
+  baseURL: '/backend',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -10,7 +10,7 @@ const client = axios.create({
  * Retourne : { fr: {1:"Nouveau",...}, mg: {1:"Vaovao",...} }
  */
 export async function fetchAllLanguages() {
-  const response = await client.get('/settings/languages');
+  const response = await client.get('settings/languages');
   return response.data;
 }
 
@@ -19,7 +19,7 @@ export async function fetchAllLanguages() {
  * Retourne : ["fr", "mg", "en"]
  */
 export async function fetchLanguageCodes() {
-  const response = await client.get('/settings/languages/codes');
+  const response = await client.get('settings/languages/codes');
   return response.data;
 }
 
@@ -28,7 +28,7 @@ export async function fetchLanguageCodes() {
  * Retourne : { 1: "Vaovao", 2: "Efa manao", 5: "Vita" }
  */
 export async function fetchLanguage(code) {
-  const response = await client.get(`/settings/languages/${code}`);
+  const response = await client.get(`settings/languages/${code}`);
   return response.data;
 }
 
@@ -38,7 +38,7 @@ export async function fetchLanguage(code) {
  * @param labels { 1: "Vaovao", 2: "Efa manao", 5: "Vita" }
  */
 export async function saveLanguage(code, labels) {
-  const response = await client.post('/settings/languages', { code, labels });
+  const response = await client.post('settings/languages', { code, labels });
   return response.data;
 }
 
@@ -46,5 +46,5 @@ export async function saveLanguage(code, labels) {
  * Supprime une langue (sauf fr).
  */
 export async function deleteLanguage(code) {
-  await client.delete(`/settings/languages/${code}`);
-}
+  await client.delete(`settings/languages/${code}`);
+}
