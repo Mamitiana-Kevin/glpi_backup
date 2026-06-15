@@ -15,6 +15,7 @@ init().then(() => {
   const historyTicketStatusRoutes = require('./routes/history/ticketStatus.cjs');
   const ticketSuperCostRoutes = require('./routes/ticket-super-cost/superCost.cjs');
   const ticketItemRoutes = require('./routes/ticket-item/index.cjs');
+  const resetSqliteRoutes = require('./routes/reset/sqlite.cjs');
 
   app.use('/backend/settings/kanban', settingsRoutes);
   app.use('/backend/settings/languages', languagesRoutes);
@@ -22,6 +23,7 @@ init().then(() => {
   app.use('/backend/history/ticket-status', historyTicketStatusRoutes);
   app.use('/backend/ticket-super-cost', ticketSuperCostRoutes);
   app.use('/backend/ticket-item', ticketItemRoutes);
+  app.use('/backend/reset/sqlite', resetSqliteRoutes);
 
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', port: PORT, db: 'glpi_data.db' });

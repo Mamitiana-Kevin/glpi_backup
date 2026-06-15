@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { allAPI, purgeAll } from '../../services/resetService'
+import { allAPI, purgeAll, purgeSqliteDb } from '../../services/resetService'
 
 export default function Reset() {
   const [selected, setSelected] = useState(() => allAPI.map((entity) => entity.url))
   const [isResetting, setIsResetting] = useState(false)
+  const [isPurgingSqlite, setIsPurgingSqlite] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [tracking, setTracking] = useState([])
@@ -90,6 +91,20 @@ export default function Reset() {
     }
   }
 
+  const handlePurgeSqlite = async () => {
+    try {
+      setIsPurgingSqlite(true)
+      setError('')
+      setMessage('')
+      const result = await purgeSqliteDb()
+      setMessage(`SQLite : ${result.message}`)
+    } catch {
+      setError('Impossible de supprimer la base de données SQLite.')
+    } finally {
+      setIsPurgingSqlite(false)
+    }
+  }
+
   const getStatusLabel = (status) => {
     switch (status) {
       case 'success': return 'OK'
@@ -159,13 +174,13 @@ export default function Reset() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
         <button
           onClick={toggleAll}
-          disabled={isResetting}
+          disabled={isResetting || isPurgingSqlite}
           style={{
             padding: '8px 18px',
             borderRadius: 8,
             border: '1px solid #d1d5db',
             background: '#f9fafb',
-            cursor: isResetting ? 'not-allowed' : 'pointer',
+            cursor: isResetting || isPurgingSqlite ? 'not-allowed' : 'pointer',
             fontSize: 14,
           }}
         >
@@ -174,19 +189,37 @@ export default function Reset() {
 
         <button
           onClick={handleReset}
-          disabled={isResetting || selected.length === 0}
+          disabled={isResetting || isPurgingSqlite || selected.length === 0}
           style={{
             padding: '8px 18px',
             borderRadius: 8,
             border: 'none',
-            background: isResetting || selected.length === 0 ? '#fca5a5' : '#dc2626',
+            background: isResetting || isPurgingSqlite || selected.length === 0 ? '#fca5a5' : '#dc2626',
             color: '#fff',
-            cursor: isResetting || selected.length === 0 ? 'not-allowed' : 'pointer',
+            cursor: isResetting || isPurgingSqlite || selected.length === 0 ? 'not-allowed' : 'pointer',
             fontSize: 14,
             fontWeight: 500,
           }}
         >
           {isResetting ? 'Purge en cours...' : 'Lancer le reset'}
+        </button>
+
+        <button
+          onClick={handlePurgeSqlite}
+          disabled={isResetting || isPurgingSqlite}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 8,
+            border: 'none',
+            background: isResetting || isPurgingSqlite ? '#fca5a5' : '#dc2626',
+            color: '#fff',
+            cursor: isResetting || isPurgingSqlite ? 'not-allowed' : 'pointer',
+            fontSize: 14,
+            fontWeight: 500,
+            marginLeft: 'auto',
+          }}
+        >
+          {isPurgingSqlite ? 'Suppression SQLite en cours...' : 'Supprimer la BD SQLite'}
         </button>
       </div>
 

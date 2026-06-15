@@ -1,4 +1,5 @@
 import { Legacy } from "../api/glpiClient";
+import axios from "axios";
 
 const allAPI = [
     // 1. On commence par les éléments qui dépendent des autres (Tickets, Assets)
@@ -163,4 +164,14 @@ async function purgeAll(selectedEntities = allAPI.map((entity) => entity.url), o
     return purgeResults;
 }
 
-export { allAPI, getIdsPour, purgeAll };
+async function purgeSqliteDb() {
+    try {
+        const response = await axios.delete('/backend/reset/sqlite');
+        return response.data;
+    } catch (error) {
+        console.error('Erreur lors de la suppression de la base de données SQLite:', error);
+        throw error;
+    }
+}
+
+export { allAPI, getIdsPour, purgeAll, purgeSqliteDb };

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { allAPI, purgeAll } from '../../../services/resetService'
+import { allAPI, purgeAll, purgeSqliteDb } from '../../../services/resetService'
 
 export default function Reset() {
   const [selected, setSelected] = useState(() => allAPI.map((entity) => entity.url))
   const [isResetting, setIsResetting] = useState(false)
+  const [isPurgingSqlite, setIsPurgingSqlite] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [tracking, setTracking] = useState([])
@@ -89,6 +90,20 @@ export default function Reset() {
     }
   }
 
+  const handlePurgeSqlite = async () => {
+    try {
+      setIsPurgingSqlite(true)
+      setError('')
+      setMessage('')
+      const result = await purgeSqliteDb()
+      setMessage(`SQLite : ${result.message}`)
+    } catch {
+      setError('Impossible de supprimer la base de données SQLite.')
+    } finally {
+      setIsPurgingSqlite(false)
+    }
+  }
+
   const getStatusLabel = (status) => {
     switch (status) {
       case 'success': return 'OK'
@@ -149,7 +164,7 @@ export default function Reset() {
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
           onClick={toggleAll}
-          disabled={isResetting}
+          disabled={isResetting || isPurgingSqlite}
           className="btn btn-outline"
         >
           {isAllSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
@@ -157,10 +172,19 @@ export default function Reset() {
 
         <button
           onClick={handleReset}
-          disabled={isResetting || selected.length === 0}
+          disabled={isResetting || isPurgingSqlite || selected.length === 0}
           className="btn btn-danger"
         >
           {isResetting ? 'Purge en cours...' : 'Lancer le reset'}
+        </button>
+
+        <button
+          onClick={handlePurgeSqlite}
+          disabled={isResetting || isPurgingSqlite}
+          className="btn btn-danger"
+          style={{ marginLeft: 'auto' }}
+        >
+          {isPurgingSqlite ? 'Suppression SQLite en cours...' : 'Supprimer la BD SQLite'}
         </button>
       </div>
 
