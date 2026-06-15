@@ -31,3 +31,18 @@ export async function fetchCostReport() {
   return response.data;
 }
 
+export async function cancelLastActiveCost(ticketId) {
+  const response = await client.post(`/ticket-super-cost/${ticketId}/cancel`);
+  return response.data;
+}
+
+export async function getTotalSuperCost() {
+  const response = await client.get('/ticket-super-cost/total');
+  return response.data;
+}
+
+export async function fetchTicketCost(ticketId) {
+  const response = await client.get(`/ticket-super-cost/${ticketId}`);
+  return response.data;
+}
+

@@ -54,6 +54,9 @@ export default function BackOfficeLayout() {
           <Link to="/import" className="menu-item">
             {!isCollapsed && <span className="label">Import CSV</span>}
           </Link>
+          <Link to="/costs/import" className="menu-item">
+            {!isCollapsed && <span className="label">Import Sqlite</span>}
+          </Link>
           <Link to="/kanban" className="menu-item">
             {!isCollapsed && <span className="label">Settings</span>}
           </Link>

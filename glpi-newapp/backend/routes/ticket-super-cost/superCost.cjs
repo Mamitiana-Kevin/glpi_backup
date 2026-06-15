@@ -7,7 +7,10 @@ const {
   deactivateLastCost,
   insertCost,
   getTotalReopeningCost,
-  getCostReportByItemtype
+  getCostReportByItemtype,
+  cancelLastActiveCost,
+  getTicketCost,
+  getTotalSuperCost
 } = require('../../services/ticketSuperCost.cjs');
 
 router.get('/:ticketId/last-active', (req, res) => {
@@ -57,6 +60,37 @@ router.get('/:ticketId/reopening-total', (req, res) => {
     res.json({ total: getTotalReopeningCost(ticketId) });
   } catch (error) {
     console.error('Error fetching reopening total:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:ticketId/cancel', (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId, 10);
+    const cancelled = cancelLastActiveCost(ticketId);
+    res.json({ success: true, cancelled });
+  } catch (error) {
+    console.error('Error cancelling last active cost:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/total', (req, res) => {
+  try {
+    res.json(getTotalSuperCost());
+  } catch (error) {
+    console.error('Error fetching total super cost:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:ticketId', (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId, 10);
+    const cost = getTicketCost(ticketId);
+    res.json({ superCost: cost });
+  } catch (error) {
+    console.error('Error fetching ticket cost:', error);
     res.status(500).json({ error: error.message });
   }
 });

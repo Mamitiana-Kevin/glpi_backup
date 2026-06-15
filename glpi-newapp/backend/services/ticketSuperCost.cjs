@@ -62,7 +62,7 @@ function getCostReportByItemtype() {
       
       // Get items for this ticket
       const items = db.prepare(`
-        SELECT itemtype
+        SELECT *
         FROM ticket_item
         WHERE ticket_id = ?
       `).all(ticketId);
@@ -70,9 +70,28 @@ function getCostReportByItemtype() {
       
       items.forEach(item => {
         if (!report[item.itemtype]) {
-          report[item.itemtype] = { total_super_cost: 0, total_reopening_cost: 0 };
+          report[item.itemtype] = { 
+            total_super_cost: 0, 
+            total_reopening_cost: 0,
+            items: []
+          };
         }
         report[item.itemtype].total_super_cost += perItemCost;
+        
+        // Check if item already exists
+        const existingItem = report[item.itemtype].items.find(i => 
+          i.item_id === item.item_id && i.itemtype === item.itemtype
+        );
+        
+        if (!existingItem) {
+          report[item.itemtype].items.push({ 
+            ...item, 
+            allocatedCost: perItemCost, 
+            allocatedReopeningCost: 0 
+          });
+        } else {
+          existingItem.allocatedCost += perItemCost;
+        }
       });
     });
     
@@ -92,16 +111,34 @@ function getCostReportByItemtype() {
       
       // Get items for this ticket
       const items = db.prepare(`
-        SELECT itemtype
+        SELECT *
         FROM ticket_item
         WHERE ticket_id = ?
       `).all(ticketId);
       
       items.forEach(item => {
         if (!report[item.itemtype]) {
-          report[item.itemtype] = { total_super_cost: 0, total_reopening_cost: 0 };
+          report[item.itemtype] = { 
+            total_super_cost: 0, 
+            total_reopening_cost: 0,
+            items: []
+          };
         }
         report[item.itemtype].total_reopening_cost += perItemReopeningCost;
+        
+        const existingItem = report[item.itemtype].items.find(i => 
+          i.item_id === item.item_id && i.itemtype === item.itemtype
+        );
+        
+        if (!existingItem) {
+          report[item.itemtype].items.push({ 
+            ...item, 
+            allocatedCost: 0, 
+            allocatedReopeningCost: perItemReopeningCost 
+          });
+        } else {
+          existingItem.allocatedReopeningCost += perItemReopeningCost;
+        }
       });
     });
     
@@ -109,7 +146,8 @@ function getCostReportByItemtype() {
     const result = Object.keys(report).map(itemtype => ({
       itemtype,
       total_super_cost: report[itemtype].total_super_cost,
-      total_reopening_cost: report[itemtype].total_reopening_cost
+      total_reopening_cost: report[itemtype].total_reopening_cost,
+      items: report[itemtype].items
     }));
     console.log('Final report result:', result);
     return result;
@@ -119,11 +157,38 @@ function getCostReportByItemtype() {
   }
 }
 
+function cancelLastActiveCost(ticketId) {
+  const lastActive = getLastActiveCost(ticketId);
+  if (!lastActive) {
+    throw new Error('No active cost to cancel');
+  }
+  db.prepare(`UPDATE ticket_super_cost SET is_active = 0 WHERE id = ?`).run(lastActive.id);
+  return lastActive;
+}
+
+function getTicketCost(ticketId) {
+  const lastActive = getLastActiveCost(ticketId);
+  return lastActive ? lastActive.amount : null;
+}
+
+function getTotalSuperCost() {
+  const result = db.prepare(`
+    SELECT SUM(amount) AS total 
+    FROM ticket_super_cost 
+    WHERE is_active = 1
+  `).get();
+  
+  return result?.total ?? 0;
+}
+
 module.exports = {
   getLastActiveCost,
   getLastInactiveCost,
   deactivateLastCost,
   insertCost,
   getTotalReopeningCost,
-  getCostReportByItemtype
+  getCostReportByItemtype,
+  cancelLastActiveCost,
+  getTicketCost,
+  getTotalSuperCost
 };
