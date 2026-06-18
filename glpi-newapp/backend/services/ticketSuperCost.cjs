@@ -49,7 +49,7 @@ function getCostReportByItemtype() {
     
     // Process active costs
     const activeCosts = db.prepare(`
-      SELECT ticket_id, amount
+      SELECT ticket_id, amount, reopening_pct
       FROM ticket_super_cost
       WHERE is_active = 1
     `).all();
@@ -59,6 +59,13 @@ function getCostReportByItemtype() {
       const ticketId = cost.ticket_id;
       const itemCount = ticketCountMap[ticketId] || 1; // Default to 1 if no items
       const perItemCost = cost.amount / itemCount;
+      
+      // Check if we have a reopening percentage for active cost
+      let perItemReopeningCost = 0;
+      if (cost.reopening_pct !== null && cost.reopening_pct !== undefined) {
+        const reopeningAmount = (cost.reopening_pct / 100) * cost.amount;
+        perItemReopeningCost = reopeningAmount / itemCount;
+      }
       
       // Get items for this ticket
       const items = db.prepare(`
@@ -77,6 +84,7 @@ function getCostReportByItemtype() {
           };
         }
         report[item.itemtype].total_super_cost += perItemCost;
+        report[item.itemtype].total_reopening_cost += perItemReopeningCost;
         
         // Check if item already exists
         const existingItem = report[item.itemtype].items.find(i => 
@@ -87,10 +95,11 @@ function getCostReportByItemtype() {
           report[item.itemtype].items.push({ 
             ...item, 
             allocatedCost: perItemCost, 
-            allocatedReopeningCost: 0 
+            allocatedReopeningCost: perItemReopeningCost 
           });
         } else {
           existingItem.allocatedCost += perItemCost;
+          existingItem.allocatedReopeningCost += perItemReopeningCost;
         }
       });
     });
@@ -171,6 +180,10 @@ function getTicketCost(ticketId) {
   return lastActive ? lastActive.amount : null;
 }
 
+function updateReopeningPercentage(ticketId, reopeningPct) {
+  db.prepare(`UPDATE ticket_super_cost SET reopening_pct = ? WHERE ticket_id = ? AND is_active = 1`).run(reopeningPct, ticketId);
+}
+
 function getTotalSuperCost() {
   const result = db.prepare(`
     SELECT SUM(amount) AS total 
@@ -190,5 +203,6 @@ module.exports = {
   getCostReportByItemtype,
   cancelLastActiveCost,
   getTicketCost,
-  getTotalSuperCost
+  getTotalSuperCost,
+  updateReopeningPercentage
 };

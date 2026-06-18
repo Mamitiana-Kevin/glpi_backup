@@ -10,7 +10,8 @@ const {
   getCostReportByItemtype,
   cancelLastActiveCost,
   getTicketCost,
-  getTotalSuperCost
+  getTotalSuperCost,
+  updateReopeningPercentage
 } = require('../../services/ticketSuperCost.cjs');
 
 router.get('/:ticketId/last-active', (req, res) => {
@@ -71,6 +72,18 @@ router.post('/:ticketId/cancel', (req, res) => {
     res.json({ success: true, cancelled });
   } catch (error) {
     console.error('Error cancelling last active cost:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:ticketId/update-reopening-pct', (req, res) => {
+  try {
+    const ticketId = parseInt(req.params.ticketId, 10);
+    const { reopeningPct } = req.body;
+    updateReopeningPercentage(ticketId, reopeningPct);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error updating reopening percentage:', error);
     res.status(500).json({ error: error.message });
   }
 });

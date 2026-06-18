@@ -9,7 +9,7 @@ import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
 import '../../../components/kanban.css';
 import { saveTicketStatusHistory } from '../../../services/backend/ticketService';
-import { fetchLastActiveCost, deactivateCost, saveCost } from '../../../services/backend/superCostService';
+import { fetchLastActiveCost, deactivateCost, saveCost, cancelLastActiveCost, updateReopeningPercentage } from '../../../services/backend/superCostService';
 import { saveTicketItems } from '../../../services/backend/ticketItemService';
 
 export default function KanbanPage() {
@@ -126,6 +126,12 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     // If moving FROM status 5 (resolved)
     if (oldStatusId === 5) {
       setCostTicket(dragging);
+      // Load last active cost to get existing reopening_pct
+      fetchLastActiveCost(dragging.id).then(lastActive => {
+        if (lastActive && lastActive.reopening_pct !== null && lastActive.reopening_pct !== undefined) {
+          setReopenPercent(String(lastActive.reopening_pct));
+        }
+      }).catch(err => console.error('Error loading last active cost:', err));
       setShowReopenModal(true);
       setDragging(null);
       return;
@@ -153,6 +159,31 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     }
   };
 
+  const handleCancel = async () => {
+    const ticket = costTicket;
+    const oldStatusId = 5;
+    const newStatusId = 2; // En cours
+    setShowReopenModal(false);
+    
+    try {
+      await cancelLastActiveCost(ticket.id);
+      await updateTicketStatus(ticket.id, newStatusId);
+      await saveTicketStatusHistory({
+        ticketId: ticket.id,
+        ticketName: ticket.name,
+        oldStatus: oldStatusId,
+        newStatus: newStatusId,
+      });
+      // Reload to reflect changes
+      load();
+    } catch {
+      alert('Erreur lors de l\'annulation.');
+    } finally {
+      setCostTicket(null);
+      setReopenPercent('');
+    }
+  };
+
   const handleReopen = async () => {
     if (!reopenPercent || isNaN(parseFloat(reopenPercent)) || parseFloat(reopenPercent) < 0 || parseFloat(reopenPercent) > 100) {
       alert('Veuillez entrer un pourcentage de réouverture valide (0-100).');
@@ -165,7 +196,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     setShowReopenModal(false);
     
     try {
-      await deactivateCost(ticket.id, parseFloat(reopenPercent));
+      await updateReopeningPercentage(ticket.id, parseFloat(reopenPercent));
       await updateTicketStatus(ticket.id, newStatusId);
       await saveTicketStatusHistory({
         ticketId: ticket.id,
@@ -377,7 +408,16 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
                   }}
                 />
               </div>
-              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  onClick={handleCancel}
+                  style={{
+                    padding: '8px 16px', background: '#ef4444', color: '#fff',
+                    border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14
+                  }}
+                >
+                  Annuler
+                </button>
                 <button
                   onClick={handleReopen}
                   style={{

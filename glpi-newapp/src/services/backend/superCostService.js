@@ -46,3 +46,8 @@ export async function fetchTicketCost(ticketId) {
   return response.data;
 }
 
+export async function updateReopeningPercentage(ticketId, reopeningPct) {
+  const response = await client.post(`/ticket-super-cost/${ticketId}/update-reopening-pct`, { reopeningPct });
+  return response.data;
+}
+
