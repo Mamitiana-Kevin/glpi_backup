@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES,} from '../../../services/ticketService';
+import { fetchKanbanTickets, updateTicketStatus, KANBAN_STATUSES, } from '../../../services/ticketService';
 import { fetchKanbanSettings, extractColors } from '../../../services/backend/kanbanSettingsService';
 import { fetchAllLanguages, fetchLanguage, } from '../../../services/backend/kanbanLanguageService';
 import { Legacy } from '../../../api/glpiClient';
@@ -9,26 +9,27 @@ import TicketDetail from './TicketDetail';
 import CreateTicket from './CreateTicket';
 import '../../../components/kanban.css';
 import { saveTicketStatusHistory } from '../../../services/backend/ticketService';
-import { fetchLastActiveCost, deactivateCost, saveCost, cancelLastActiveCost, updateReopeningPercentage } from '../../../services/backend/superCostService';
+import { fetchLastActiveCost, saveCost, cancelLastActiveCost, fetchBaseForMode, saveReopen } from '../../../services/backend/superCostService';
 import { saveTicketItems } from '../../../services/backend/ticketItemService';
 
 export default function KanbanPage() {
-  const [columns,        setColumns]        = useState({ 1: [], 2: [], 5: [] });
-  const [loading,        setLoading]        = useState(true);
-  const [error,          setError]          = useState(null);
-  const [dragging,       setDragging]       = useState(null);
-  const [showAddModal,   setShowAddModal]   = useState(false);
+  const [columns, setColumns] = useState({ 1: [], 2: [], 5: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dragging, setDragging] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [showCostModal,  setShowCostModal]  = useState(false);
+  const [showCostModal, setShowCostModal] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
-  const [costTicket,     setCostTicket]     = useState(null);
-  const [superCost,      setSuperCost]      = useState('');
-  const [reopenPercent,  setReopenPercent]  = useState('');
+  const [costTicket, setCostTicket] = useState(null);
+  const [superCost, setSuperCost] = useState('');
+  const [reopenPercent, setReopenPercent] = useState('');
+  const [reopenMode, setReopenMode] = useState(1);
 
   // Settings depuis SQLite
-  const [colors,      setColors]      = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
-  const [labels,      setLabels]      = useState({ 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' });
-  const [languages,   setLanguages]   = useState(['fr']);
+  const [colors, setColors] = useState({ 1: '#3b82f6', 2: '#f59e0b', 5: '#16a34a' });
+  const [labels, setLabels] = useState({ 1: 'Nouveau', 2: 'En cours', 5: 'Résolu' });
+  const [languages, setLanguages] = useState(['fr']);
   const [currentLang, setCurrentLang] = useState('fr');
 
   const statusesWithLabels = KANBAN_STATUSES.map((s) => ({
@@ -36,7 +37,7 @@ export default function KanbanPage() {
     label: labels[s.id] ?? s.label, // ← remplace par la traduction
   }));
 
-    
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -91,20 +92,20 @@ export default function KanbanPage() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  
-// Mise à jour optimiste de l'UI (pas d'appel API)
-function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
-  return {
-    ...columns,
-    [oldStatusId]: columns[oldStatusId].filter((t) => t.id !== ticket.id),
-    [newStatusId]: [
-      ...(columns[newStatusId] ?? []),
-      { ...ticket, status: newStatusId },
-    ],
-  };
-}
 
-// Rollback si l'API échoue
+  // Mise à jour optimiste de l'UI (pas d'appel API)
+  function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
+    return {
+      ...columns,
+      [oldStatusId]: columns[oldStatusId].filter((t) => t.id !== ticket.id),
+      [newStatusId]: [
+        ...(columns[newStatusId] ?? []),
+        { ...ticket, status: newStatusId },
+      ],
+    };
+  }
+
+  // Rollback si l'API échoue
   function rollbackTicket(columns, ticket, oldStatusId, newStatusId) {
     return {
       ...columns,
@@ -122,7 +123,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
       return;
     }
     const oldStatusId = dragging.status;
-    
+
     // If moving FROM status 5 (resolved)
     if (oldStatusId === 5) {
       setCostTicket(dragging);
@@ -136,19 +137,19 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
       setDragging(null);
       return;
     }
-    
+
     // Proceed with optimistic update
     setColumns((prev) => moveTicketOptimistic(prev, dragging, oldStatusId, newStatusId));
     setDragging(null);
     try {
       await updateTicketStatus(dragging.id, newStatusId);
       await saveTicketStatusHistory({
-        ticketId:   dragging.id,
+        ticketId: dragging.id,
         ticketName: dragging.name,
-        oldStatus:  oldStatusId,
-        newStatus:  newStatusId,
+        oldStatus: oldStatusId,
+        newStatus: newStatusId,
       });
-      
+
       if (newStatusId === 5) {
         setCostTicket(dragging);
         setShowCostModal(true);
@@ -164,7 +165,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
     const oldStatusId = 5;
     const newStatusId = 2; // En cours
     setShowReopenModal(false);
-    
+
     try {
       await cancelLastActiveCost(ticket.id);
       await updateTicketStatus(ticket.id, newStatusId);
@@ -185,18 +186,21 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
   };
 
   const handleReopen = async () => {
-    if (!reopenPercent || isNaN(parseFloat(reopenPercent)) || parseFloat(reopenPercent) < 0 || parseFloat(reopenPercent) > 100) {
+    const pct = parseFloat(reopenPercent);
+    if (!reopenPercent || isNaN(pct) || pct < 0 || pct > 100) {
       alert('Veuillez entrer un pourcentage de réouverture valide (0-100).');
       return;
     }
-    
+
     const ticket = costTicket;
     const oldStatusId = 5;
-    const newStatusId = 2; // Back to "En cours"
+    const newStatusId = 2;
     setShowReopenModal(false);
-    
+
     try {
-      await updateReopeningPercentage(ticket.id, parseFloat(reopenPercent));
+      const base = await fetchBaseForMode(ticket.id, reopenMode);
+      const amount = (pct / 100) * base;
+      await saveReopen(ticket.id, amount, pct, reopenMode);
       await updateTicketStatus(ticket.id, newStatusId);
       await saveTicketStatusHistory({
         ticketId: ticket.id,
@@ -204,14 +208,13 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
         oldStatus: oldStatusId,
         newStatus: newStatusId,
       });
-      
-      // Reload to reflect changes
       load();
     } catch {
       alert('Erreur lors de la réouverture.');
     } finally {
       setCostTicket(null);
       setReopenPercent('');
+      setReopenMode(1);
     }
   };
 
@@ -223,15 +226,8 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
 
     try {
       const amount = parseFloat(superCost);
-      const lastActive = await fetchLastActiveCost(costTicket.id);
-      let reopeningPct = null;
-      
-      if (lastActive) {
-        reopeningPct = lastActive.reopening_pct;
-      }
-      
-      await saveCost(costTicket.id, amount, reopeningPct);
-      
+      await saveCost(costTicket.id, amount);
+
       // Sync ticket items
       try {
         const itemsResponse = await Legacy.get('/Item_Ticket', { 'searchText[tickets_id]': costTicket.id });
@@ -244,7 +240,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
       } catch (err) {
         console.error('Error syncing ticket items:', err);
       }
-      
+
       setShowCostModal(false);
       setCostTicket(null);
       setSuperCost('');
@@ -259,7 +255,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
   };
 
   if (loading) return <p className="kanban-loading">Chargement du Kanban...</p>;
-  if (error)   return <p className="kanban-error">{error}</p>;
+  if (error) return <p className="kanban-error">{error}</p>;
 
   return (
     <div className="kanban-page">
@@ -284,8 +280,8 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
               <option key={lang} value={lang}>
                 {lang === 'fr' ? '🇫🇷 Français'
                   : lang === 'mg' ? '🇲🇬 Malagasy'
-                  : lang === 'en' ? '🇬🇧 English'
-                  : lang}
+                    : lang === 'en' ? '🇬🇧 English'
+                      : lang}
               </option>
             ))}
           </select>
@@ -378,7 +374,7 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
           </div>
         </div>
       )}
-      
+
       {/* Modal Réouverture */}
       {showReopenModal && costTicket && (
         <div className="modal-overlay" onClick={() => setShowReopenModal(false)}>
@@ -392,6 +388,19 @@ function moveTicketOptimistic(columns, ticket, oldStatusId, newStatusId) {
             </div>
             <div className="modal-body" style={{ padding: 20 }}>
               <p style={{ marginBottom: 16 }}>Ticket : {costTicket.name}</p>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>Base de calcul</label>
+                <select
+                  value={reopenMode}
+                  onChange={(e) => setReopenMode(parseInt(e.target.value, 10))}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
+                >
+                  <option value={1}>1 — Dernier coût</option>
+                  <option value={2}>2 — Premier coût</option>
+                  <option value={3}>3 — Total des coûts</option>
+                  <option value={4}>4 — Moyenne des coûts</option>
+                </select>
+              </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>Pourcentage de réouverture (0-100)</label>
                 <input

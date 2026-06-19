@@ -4,14 +4,15 @@ import { useState } from 'react';
 
 
 
-import { fetchLastActiveCost, saveCost, cancelLastActiveCost, updateReopeningPercentage } from '../../../services/backend/superCostService';
+import { saveCost, cancelLastActiveCost, fetchBaseForMode, saveReopen } from '../../../services/backend/superCostService';
 
 function parseCSV(content) {
   const lines = content.trim().split(/\r?\n/);
   return lines.map(line => {
-    const [ticketIdStr, action, valueStr] = line.split(',').map(s => s.trim());
+    const [ticketIdStr, action, valueStr, modeStr] = line.split(',').map(s => s.trim());
     const ticketId = parseInt(ticketIdStr, 10);
-    return { ticketId, action, valueStr };
+    const mode = modeStr ? parseInt(modeStr, 10) : 1;
+    return { ticketId, action, valueStr, mode };
   });
 }
 
@@ -20,32 +21,32 @@ function parseNumber(valueStr) {
   return parseFloat(valueStr.replace(',', '.'));
 }
 
-async function handleOpen(ticketId, valueStr) {
+async function handleOpen(ticketId, valueStr, mode) {
   const pct = parseNumber(valueStr);
   if (isNaN(pct)) throw new Error('Invalid percentage');
-  await updateReopeningPercentage(ticketId, pct);
+  const base = await fetchBaseForMode(ticketId, mode);
+  const amount = (pct / 100) * base;
+  await saveReopen(ticketId, amount, pct, mode);
 }
 
 async function handleClose(ticketId, valueStr) {
   const amount = parseNumber(valueStr);
   if (isNaN(amount)) throw new Error('Invalid amount');
-  const lastActive = await fetchLastActiveCost(ticketId);
-  const reopeningPct = lastActive?.reopening_pct ?? null;
-  await saveCost(ticketId, amount, reopeningPct);
+  await saveCost(ticketId, amount);
 }
 
 async function handleCancel(ticketId) {
   await cancelLastActiveCost(ticketId);
 }
 
-async function processLine({ ticketId, action, valueStr }, index) {
+async function processLine({ ticketId, action, valueStr, mode }, index) {
   if (isNaN(ticketId)) {
     throw new Error('Invalid ticket ID');
   }
 
   switch (action) {
     case 'open':
-      await handleOpen(ticketId, valueStr);
+      await handleOpen(ticketId, valueStr, mode);
       break;
     case 'close':
       await handleClose(ticketId, valueStr);
@@ -69,6 +70,7 @@ export default function CostImportPage() {
   const [manualAction, setManualAction] = useState('close');
   const [manualValue, setManualValue] = useState('');
   const [manualResult, setManualResult] = useState(null);
+  const [manualMode,   setManualMode]   = useState(1);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -111,7 +113,7 @@ export default function CostImportPage() {
       const ticketId = parseInt(manualTicketId, 10);
       if (isNaN(ticketId)) throw new Error('ID ticket invalide');
       
-      await processLine({ ticketId, action: manualAction, valueStr: manualValue }, 0);
+      await processLine({ ticketId, action: manualAction, valueStr: manualValue, mode: manualMode }, 0);
       setManualResult({ success: true, message: 'Opération réussie!' });
       
       // Réinitialiser les champs
@@ -236,6 +238,30 @@ export default function CostImportPage() {
               required={manualAction !== 'cancel'}
             />
           </div>
+
+          {manualAction === 'open' && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px' }}>Base de calcul (mode)</label>
+              <select
+                value={manualMode}
+                onChange={(e) => setManualMode(parseInt(e.target.value, 10))}
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: 'white'
+                }}
+              >
+                <option value={1}>1 — Dernier coût</option>
+                <option value={2}>2 — Premier coût</option>
+                <option value={3}>3 — Total des coûts</option>
+                <option value={4}>4 — Moyenne des coûts</option>
+              </select>
+            </div>
+          )}
 
           <button
             type="submit"

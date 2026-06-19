@@ -1,171 +1,91 @@
 
 const { wrapper: db } = require('../db.cjs');
 
+// ─── Lecture ────────────────────────────────────────────────────────────────
+
 function getLastActiveCost(ticketId) {
-  return db.prepare(`SELECT * FROM ticket_super_cost WHERE ticket_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 1`).get(ticketId);
+  return db.prepare(
+    `SELECT * FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1 ORDER BY id DESC LIMIT 1`
+  ).get(ticketId);
 }
 
-function getLastInactiveCost(ticketId) {
-  return db.prepare(`SELECT * FROM ticket_super_cost WHERE ticket_id = ? AND is_active = 0 ORDER BY id DESC LIMIT 1`).get(ticketId);
+function getTicketCost(ticketId) {
+  const lastActive = getLastActiveCost(ticketId);
+  return lastActive ? lastActive.amount : null;
 }
 
-function deactivateLastCost(ticketId, reopeningPct) {
-  db.prepare(`UPDATE ticket_super_cost SET is_active = 0, reopening_pct = ? WHERE ticket_id = ? AND is_active = 1`).run(reopeningPct, ticketId);
+function getTotalSuperCost() {
+  const result = db.prepare(
+    `SELECT SUM(amount) AS total FROM ticket_super_cost WHERE type = 'close' AND is_active = 1`
+  ).get();
+  return result?.total ?? 0;
 }
 
-function insertCost(ticketId, amount, reopeningPct) {
-  const createdAt = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO ticket_super_cost (ticket_id, amount, reopening_pct, is_active, created_at)
-    VALUES (?, ?, ?, 1, ?)
-  `);
-  stmt.run(ticketId, amount, reopeningPct, createdAt);
-  return getLastActiveCost(ticketId);
-}
-
-function getTotalReopeningCost(ticketId) {
-  const row = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM ticket_super_cost WHERE ticket_id = ? AND is_active = 0`).get(ticketId);
-  return row.total ?? 0;
-}
-
-function getCostReportByItemtype() {
-  try {
-    console.log('Starting getCostReportByItemtype...');
-    // First, for each ticket, get number of items
-    const ticketItemCounts = db.prepare(`
-      SELECT ticket_id, COUNT(*) AS item_count
-      FROM ticket_item
-      GROUP BY ticket_id
-    `).all();
-    console.log('ticketItemCounts:', ticketItemCounts);
-    
-    const ticketCountMap = {};
-    ticketItemCounts.forEach(row => {
-      ticketCountMap[row.ticket_id] = row.item_count;
-    });
-    
-    // Now process to get report by itemtype
-    const report = {};
-    
-    // Process active costs
-    const activeCosts = db.prepare(`
-      SELECT ticket_id, amount, reopening_pct
-      FROM ticket_super_cost
-      WHERE is_active = 1
-    `).all();
-    console.log('activeCosts:', activeCosts);
-    
-    activeCosts.forEach(cost => {
-      const ticketId = cost.ticket_id;
-      const itemCount = ticketCountMap[ticketId] || 1; // Default to 1 if no items
-      const perItemCost = cost.amount / itemCount;
-      
-      // Check if we have a reopening percentage for active cost
-      let perItemReopeningCost = 0;
-      if (cost.reopening_pct !== null && cost.reopening_pct !== undefined) {
-        const reopeningAmount = (cost.reopening_pct / 100) * cost.amount;
-        perItemReopeningCost = reopeningAmount / itemCount;
-      }
-      
-      // Get items for this ticket
-      const items = db.prepare(`
-        SELECT *
-        FROM ticket_item
-        WHERE ticket_id = ?
-      `).all(ticketId);
-      console.log(`Items for ticket ${ticketId}:`, items);
-      
-      items.forEach(item => {
-        if (!report[item.itemtype]) {
-          report[item.itemtype] = { 
-            total_super_cost: 0, 
-            total_reopening_cost: 0,
-            items: []
-          };
-        }
-        report[item.itemtype].total_super_cost += perItemCost;
-        report[item.itemtype].total_reopening_cost += perItemReopeningCost;
-        
-        // Check if item already exists
-        const existingItem = report[item.itemtype].items.find(i => 
-          i.item_id === item.item_id && i.itemtype === item.itemtype
-        );
-        
-        if (!existingItem) {
-          report[item.itemtype].items.push({ 
-            ...item, 
-            allocatedCost: perItemCost, 
-            allocatedReopeningCost: perItemReopeningCost 
-          });
-        } else {
-          existingItem.allocatedCost += perItemCost;
-          existingItem.allocatedReopeningCost += perItemReopeningCost;
-        }
-      });
-    });
-    
-    // Process inactive costs (reopening)
-    const inactiveCosts = db.prepare(`
-      SELECT ticket_id, amount, reopening_pct
-      FROM ticket_super_cost
-      WHERE is_active = 0
-    `).all();
-    console.log('inactiveCosts:', inactiveCosts);
-    
-    inactiveCosts.forEach(cost => {
-      const ticketId = cost.ticket_id;
-      const itemCount = ticketCountMap[ticketId] || 1; // Default to 1 if no items
-      const reopeningAmount = (cost.reopening_pct || 0) / 100 * cost.amount;
-      const perItemReopeningCost = reopeningAmount / itemCount;
-      
-      // Get items for this ticket
-      const items = db.prepare(`
-        SELECT *
-        FROM ticket_item
-        WHERE ticket_id = ?
-      `).all(ticketId);
-      
-      items.forEach(item => {
-        if (!report[item.itemtype]) {
-          report[item.itemtype] = { 
-            total_super_cost: 0, 
-            total_reopening_cost: 0,
-            items: []
-          };
-        }
-        report[item.itemtype].total_reopening_cost += perItemReopeningCost;
-        
-        const existingItem = report[item.itemtype].items.find(i => 
-          i.item_id === item.item_id && i.itemtype === item.itemtype
-        );
-        
-        if (!existingItem) {
-          report[item.itemtype].items.push({ 
-            ...item, 
-            allocatedCost: 0, 
-            allocatedReopeningCost: perItemReopeningCost 
-          });
-        } else {
-          existingItem.allocatedReopeningCost += perItemReopeningCost;
-        }
-      });
-    });
-    
-    // Convert to array
-    const result = Object.keys(report).map(itemtype => ({
-      itemtype,
-      total_super_cost: report[itemtype].total_super_cost,
-      total_reopening_cost: report[itemtype].total_reopening_cost,
-      items: report[itemtype].items
-    }));
-    console.log('Final report result:', result);
-    return result;
-  } catch (error) {
-    console.error('Error in getCostReportByItemtype:', error);
-    throw error;
+/**
+ * Retourne le montant de base selon le mode choisi.
+ * Mode 1 : dernier close actif
+ * Mode 2 : premier close actif
+ * Mode 3 : total des closes actifs
+ * Mode 4 : moyenne des closes actifs
+ */
+function getBaseForMode(ticketId, mode) {
+  const modeInt = parseInt(mode, 10);
+  let row;
+  switch (modeInt) {
+    case 1:
+      row = db.prepare(
+        `SELECT amount FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1 ORDER BY id DESC LIMIT 1`
+      ).get(ticketId);
+      return row?.amount ?? 0;
+    case 2:
+      row = db.prepare(
+        `SELECT amount FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1 ORDER BY id ASC LIMIT 1`
+      ).get(ticketId);
+      return row?.amount ?? 0;
+    case 3:
+      row = db.prepare(
+        `SELECT COALESCE(SUM(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
+      ).get(ticketId);
+      return row?.base ?? 0;
+    case 4:
+      row = db.prepare(
+        `SELECT COALESCE(AVG(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
+      ).get(ticketId);
+      return row?.base ?? 0;
+    default:
+      throw new Error(`Mode inconnu : ${mode}`);
   }
 }
 
+// ─── Écriture ────────────────────────────────────────────────────────────────
+
+/**
+ * Insère un coût de fermeture (type='close').
+ */
+function insertCost(ticketId, amount) {
+  const createdAt = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO ticket_super_cost (ticket_id, amount, type, reopening_pct, reopen_mode, is_active, created_at)
+     VALUES (?, ?, 'close', NULL, NULL, 1, ?)`
+  ).run(ticketId, amount, createdAt);
+  return getLastActiveCost(ticketId);
+}
+
+/**
+ * Insère un coût de réouverture (type='reopen').
+ * amount est déjà calculé côté React (pct/100 * base).
+ */
+function insertReopen(ticketId, amount, reopeningPct, reopenMode) {
+  const createdAt = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO ticket_super_cost (ticket_id, amount, type, reopening_pct, reopen_mode, is_active, created_at)
+     VALUES (?, ?, 'reopen', ?, ?, 1, ?)`
+  ).run(ticketId, amount, reopeningPct, reopenMode, createdAt);
+}
+
+/**
+ * Annule le dernier close actif (is_active = 0).
+ */
 function cancelLastActiveCost(ticketId) {
   const lastActive = getLastActiveCost(ticketId);
   if (!lastActive) {
@@ -175,34 +95,110 @@ function cancelLastActiveCost(ticketId) {
   return lastActive;
 }
 
-function getTicketCost(ticketId) {
-  const lastActive = getLastActiveCost(ticketId);
-  return lastActive ? lastActive.amount : null;
+// ─── Rapport ─────────────────────────────────────────────────────────────────
+
+/** Retourne la map ticketId → nombre d'items */
+function _getTicketItemCountMap() {
+  const rows = db.prepare(
+    `SELECT ticket_id, COUNT(*) AS item_count FROM ticket_item GROUP BY ticket_id`
+  ).all();
+  const map = {};
+  rows.forEach(r => { map[r.ticket_id] = r.item_count; });
+  return map;
 }
 
-function updateReopeningPercentage(ticketId, reopeningPct) {
-  db.prepare(`UPDATE ticket_super_cost SET reopening_pct = ? WHERE ticket_id = ? AND is_active = 1`).run(reopeningPct, ticketId);
+/** Retourne les items d'un ticket */
+function _getItemsForTicket(ticketId) {
+  return db.prepare(`SELECT * FROM ticket_item WHERE ticket_id = ?`).all(ticketId);
 }
 
-function getTotalSuperCost() {
-  const result = db.prepare(`
-    SELECT SUM(amount) AS total 
-    FROM ticket_super_cost 
-    WHERE is_active = 1
-  `).get();
-  
-  return result?.total ?? 0;
+/** Initialise une entrée de rapport pour un itemtype si elle n'existe pas */
+function _ensureReportEntry(report, itemtype) {
+  if (!report[itemtype]) {
+    report[itemtype] = { total_super_cost: 0, total_reopening_cost: 0, items: [] };
+  }
 }
+
+/** Ajoute ou cumule un item dans le rapport */
+function _upsertReportItem(report, itemtype, item, allocatedCost, allocatedReopeningCost) {
+  const existing = report[itemtype].items.find(
+    i => i.item_id === item.item_id && i.itemtype === item.itemtype
+  );
+  if (!existing) {
+    report[itemtype].items.push({ ...item, allocatedCost, allocatedReopeningCost });
+  } else {
+    existing.allocatedCost += allocatedCost;
+    existing.allocatedReopeningCost += allocatedReopeningCost;
+  }
+}
+
+/** Traite les lignes type='close' is_active=1 dans le rapport */
+function _processCloseCosts(report, ticketCountMap) {
+  const closeCosts = db.prepare(
+    `SELECT ticket_id, amount FROM ticket_super_cost WHERE type = 'close' AND is_active = 1`
+  ).all();
+
+  closeCosts.forEach(cost => {
+    const { ticket_id: ticketId, amount } = cost;
+    const itemCount = ticketCountMap[ticketId] || 1;
+    const perItemCost = amount / itemCount;
+    const items = _getItemsForTicket(ticketId);
+
+    items.forEach(item => {
+      _ensureReportEntry(report, item.itemtype);
+      report[item.itemtype].total_super_cost += perItemCost;
+      _upsertReportItem(report, item.itemtype, item, perItemCost, 0);
+    });
+  });
+}
+
+/** Traite les lignes type='reopen' is_active=1 dans le rapport */
+function _processReopenCosts(report, ticketCountMap) {
+  const reopenCosts = db.prepare(
+    `SELECT ticket_id, amount FROM ticket_super_cost WHERE type = 'reopen' AND is_active = 1`
+  ).all();
+
+  reopenCosts.forEach(cost => {
+    const { ticket_id: ticketId, amount } = cost;
+    const itemCount = ticketCountMap[ticketId] || 1;
+    const perItemReopeningCost = amount / itemCount;
+    const items = _getItemsForTicket(ticketId);
+
+    items.forEach(item => {
+      _ensureReportEntry(report, item.itemtype);
+      report[item.itemtype].total_reopening_cost += perItemReopeningCost;
+      _upsertReportItem(report, item.itemtype, item, 0, perItemReopeningCost);
+    });
+  });
+}
+
+/** Convertit le rapport en tableau */
+function _reportToArray(report) {
+  return Object.keys(report).map(itemtype => ({
+    itemtype,
+    total_super_cost: report[itemtype].total_super_cost,
+    total_reopening_cost: report[itemtype].total_reopening_cost,
+    items: report[itemtype].items,
+  }));
+}
+
+function getCostReportByItemtype() {
+  const ticketCountMap = _getTicketItemCountMap();
+  const report = {};
+  _processCloseCosts(report, ticketCountMap);
+  _processReopenCosts(report, ticketCountMap);
+  return _reportToArray(report);
+}
+
+// ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
   getLastActiveCost,
-  getLastInactiveCost,
-  deactivateLastCost,
-  insertCost,
-  getTotalReopeningCost,
-  getCostReportByItemtype,
-  cancelLastActiveCost,
   getTicketCost,
   getTotalSuperCost,
-  updateReopeningPercentage
+  getBaseForMode,
+  insertCost,
+  insertReopen,
+  cancelLastActiveCost,
+  getCostReportByItemtype,
 };

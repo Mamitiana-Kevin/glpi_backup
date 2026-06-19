@@ -65,12 +65,14 @@ async function init() {
     );
 
     CREATE TABLE IF NOT EXISTS ticket_super_cost (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      ticket_id      INTEGER NOT NULL,
-      amount         REAL    NOT NULL,
-      reopening_pct  REAL,
-      is_active      INTEGER NOT NULL DEFAULT 1,
-      created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id     INTEGER NOT NULL,
+      amount        REAL    NOT NULL,
+      type          TEXT    NOT NULL DEFAULT 'close',
+      reopening_pct REAL,
+      reopen_mode   TEXT,
+      is_active     INTEGER NOT NULL DEFAULT 1,
+      created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS ticket_item (
       id       INTEGER PRIMARY KEY AUTOINCREMENT,

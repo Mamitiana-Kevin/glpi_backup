@@ -11,18 +11,8 @@ export async function fetchLastActiveCost(ticketId) {
   return response.data;
 }
 
-export async function deactivateCost(ticketId, reopeningPct) {
-  const response = await client.post('/ticket-super-cost/deactivate', { ticketId, reopeningPct });
-  return response.data;
-}
-
-export async function saveCost(ticketId, amount, reopeningPct) {
-  const response = await client.post('/ticket-super-cost', { ticketId, amount, reopeningPct });
-  return response.data;
-}
-
-export async function fetchReopeningTotal(ticketId) {
-  const response = await client.get(`/ticket-super-cost/${ticketId}/reopening-total`);
+export async function saveCost(ticketId, amount) {
+  const response = await client.post('/ticket-super-cost', { ticketId, amount });
   return response.data;
 }
 
@@ -46,8 +36,25 @@ export async function fetchTicketCost(ticketId) {
   return response.data;
 }
 
-export async function updateReopeningPercentage(ticketId, reopeningPct) {
-  const response = await client.post(`/ticket-super-cost/${ticketId}/update-reopening-pct`, { reopeningPct });
-  return response.data;
+/**
+ * Récupère le montant de base selon le mode choisi pour un ticket.
+ * Mode 1 : dernier close, 2 : premier close, 3 : total, 4 : moyenne
+ */
+export async function fetchBaseForMode(ticketId, mode) {
+  const response = await client.get(`/ticket-super-cost/${ticketId}/base/${mode}`);
+  return response.data.base;
 }
 
+/**
+ * Enregistre une réouverture.
+ * Le calcul amount = pct/100 * base doit être fait avant d'appeler cette fonction.
+ */
+export async function saveReopen(ticketId, amount, reopeningPct, reopenMode) {
+  const response = await client.post('/ticket-super-cost/reopen', {
+    ticketId,
+    amount,
+    reopeningPct,
+    reopenMode,
+  });
+  return response.data;
+}
