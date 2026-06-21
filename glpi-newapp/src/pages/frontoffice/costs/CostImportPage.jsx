@@ -1,16 +1,18 @@
 
 import { useState } from 'react';
 
-
-
-
+import { getTicketIdByExternalId } from '../../../services/ticketService';
 import { saveCost, cancelLastActiveCost, fetchBaseForMode, saveReopen } from '../../../services/backend/superCostService';
 
 function parseCSV(content) {
   const lines = content.trim().split(/\r?\n/);
-  return lines.map(line => {
+  return lines.map(async line => {
     const [ticketIdStr, action, valueStr, modeStr] = line.split(',').map(s => s.trim());
-    const ticketId = parseInt(ticketIdStr, 10);
+    
+    // Toujours lookup via externalid car ticketIdStr est la ref, pas le vrai ID GLPI
+    const ticketId = await getTicketIdByExternalId(ticketIdStr);
+    if (!ticketId) throw new Error(`Ref introuvable : ${ticketIdStr}`);
+
     const mode = modeStr ? parseInt(modeStr, 10) : 1;
     return { ticketId, action, valueStr, mode };
   });
@@ -64,13 +66,13 @@ export default function CostImportPage() {
   const [processed, setProcessed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   // State pour la saisie manuelle
   const [manualTicketId, setManualTicketId] = useState('');
   const [manualAction, setManualAction] = useState('close');
   const [manualValue, setManualValue] = useState('');
   const [manualResult, setManualResult] = useState(null);
-  const [manualMode,   setManualMode]   = useState(1);
+  const [manualMode, setManualMode] = useState(1);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -83,7 +85,7 @@ export default function CostImportPage() {
     if (!selectedFile) return;
 
     const text = await selectedFile.text();
-    const lines = parseCSV(text);
+    const lines = await Promise.all(parseCSV(text)); 
 
     setErrors([]);
     setProcessed(0);
@@ -112,10 +114,10 @@ export default function CostImportPage() {
     try {
       const ticketId = parseInt(manualTicketId, 10);
       if (isNaN(ticketId)) throw new Error('ID ticket invalide');
-      
+
       await processLine({ ticketId, action: manualAction, valueStr: manualValue, mode: manualMode }, 0);
       setManualResult({ success: true, message: 'Opération réussie!' });
-      
+
       // Réinitialiser les champs
       setManualTicketId('');
       setManualValue('');
@@ -129,7 +131,7 @@ export default function CostImportPage() {
   return (
     <div style={{ padding: '24px' }}>
       <h1 style={{ fontSize: '22px', marginBottom: '24px' }}>Gestion des coûts</h1>
-      
+
       {/* Import CSV */}
       <div style={{ marginBottom: '48px', borderBottom: '2px solid #e5e7eb', paddingBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>Import CSV</h2>
@@ -257,8 +259,8 @@ export default function CostImportPage() {
               >
                 <option value={1}>1 — Dernier coût</option>
                 <option value={2}>2 — Premier coût</option>
-                <option value={3}>3 — Total des coûts</option>
-                <option value={4}>4 — Moyenne des coûts</option>
+                <option value={3}>3 — Moyenne des coûts</option>
+                <option value={4}>4 — Total des coûts</option>
               </select>
             </div>
           )}

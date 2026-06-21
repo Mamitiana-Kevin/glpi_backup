@@ -397,8 +397,8 @@ export default function KanbanPage() {
                 >
                   <option value={1}>1 — Dernier coût</option>
                   <option value={2}>2 — Premier coût</option>
-                  <option value={3}>3 — Total des coûts</option>
-                  <option value={4}>4 — Moyenne des coûts</option>
+                  <option value={3}>3 — Moyenne des coûts</option>
+                  <option value={4}>4 — Total des coûts</option>
                 </select>
               </div>
               <div>

@@ -64,7 +64,9 @@ export async function importTickets(csvText, nameToItem, onProgress = () => {}) 
       const { data } = await post('/Assistance/Ticket', payload);
       const ticketId = data.id;
       refToId[row.Ref_Ticket] = ticketId;
-
+      await Legacy.put(`Ticket/${ticketId}`, {
+        externalid: row.Ref_Ticket
+      });
       const items = parseItems(row.Items);
       const warnings = [];
 

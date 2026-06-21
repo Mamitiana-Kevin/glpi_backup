@@ -1,6 +1,15 @@
 import { post,get } from '../api/glpiClient';
 import { Legacy } from '../api/glpiClient';
 
+export async function getTicketIdByExternalId(externalId) {
+  const res = await Legacy.get('/Ticket', {
+    searchText: { externalid: externalId },
+    range: '0-1'
+  });
+  const tickets = Array.isArray(res.data) ? res.data : [];
+  return tickets[0]?.id || null;
+}
+
 export async function createTicket({ name, content, type, urgency, impact, priority }) {
   const response = await post('/Assistance/Ticket', {
     name,

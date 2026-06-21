@@ -390,7 +390,7 @@ src/
 | Historique statuts tickets | ✅ Fait | Enregistré dans SQLite à chaque drag&drop |
 | Historique couleurs | ✅ Fait | Enregistré dans SQLite à chaque changement de couleur |
 | Documentation Technique | ✅ Fait | Création du fichier `documentation.md` |
-| Réouverture des Tickets | ✅ Fait | Modale pour saisir le % de réouverture, désactivation du coût |
+| Réouverture des Tickets | ✅ Fait | Choix du % et du mode de réouverture, calcul automatique du montant et insertion du coût 'reopen' |
 | Super Cost | ✅ Fait | Gestion des surcoûts, répartition par itemtype |
 | Rapport par Itemtype | ✅ Fait | Page CostReportPage avec coûts GLPI et Super Cost |
 
@@ -476,24 +476,26 @@ src/
 - **Facilité de copie** : Chaque fichier service est autonome et peut être copié facilement dans un autre projet.
 
 ### Fonctionnalité Réouverture des Tickets
-- **Logique de réouverture** : Lorsque l'on déplace un ticket depuis "Résolu" vers un autre statut, une boîte de dialogue apparaît pour saisir le pourcentage de réouverture.
-- **Mise à jour SQLite** : La fonction `deactivateLastCost` dans `ticketSuperCost.cjs` désactive la ligne active (is_active = 0) et stocke le pourcentage de réouverture.
-- **Calcul du coût réel** : Lors de la prochaine résolution, le calcul `effective_cost` intègre le pourcentage de réouverture.
+- **Logique de réouverture** : Lorsque l'on déplace un ticket depuis "Résolu" vers un autre statut, une modale permet de configurer le pourcentage et le mode de réouverture.
+- **Calcul du montant de réouverture** : Le frontend interroge le backend pour obtenir le montant de base correspondant au mode choisi (1: Dernier, 2: Premier, 3: Moyenne, 4: Total) via l'API, calcule `amount = pct / 100 * base`, et l'enregistre en base.
+- **Insertion du coût de réouverture** : Un coût de type `reopen` est inséré pour stocker le montant calculé, le pourcentage et le mode associés.
 
 ### Refonte du Super Cost
-- **Table mise à jour** : La table `ticket_super_cost` a été modifiée pour supprimer `effective_cost` (calculé côté backend) et ajouter `is_active` (1 = coût courant, 0 = désactivé).
-- **Nouvelle table `ticket_item`** : Stocke la relation entre les tickets et les items (ticket_id, item_id, itemtype) pour permettre la répartition du coût par item.
+- **Table de base** : La table `ticket_super_cost` contient désormais `type` (`close` ou `reopen`), `reopening_pct`, `reopen_mode` et `is_active` (1 = actif, 0 = annulé).
+- **Table `ticket_item`** : Gère la relation many-to-many entre les tickets et les items (ticket_id, item_id, itemtype) pour la distribution des coûts.
 - **Service `ticketSuperCost.cjs`** :
-  - `getLastActiveCost(ticketId)` : Récupère la dernière ligne active
-  - `getLastInactiveCost(ticketId)` : Récupère la dernière ligne inactive
-  - `deactivateLastCost(ticketId, reopeningPct)` : Désactive la ligne active et stocke le pourcentage
-  - `insertCost(ticketId, amount, reopeningPct)` : Insère une nouvelle ligne active
-  - `getTotalReopeningCost(ticketId)` : Somme des effective_cost des lignes inactives
-  - `getCostReportByItemtype()` : Rapport groupé par itemtype (répartition des coûts par item)
+  - `getLastActiveCost(ticketId)` : Récupère le dernier coût de type 'close' actif.
+  - `getTicketCost(ticketId)` : Récupère le montant du dernier coût de type 'close' actif.
+  - `getTotalSuperCost()` : Calcule le total de tous les coûts de type 'close' actifs.
+  - `getBaseForMode(ticketId, mode)` : Calcule la base financière selon le mode (Dernier, Premier, Moyenne, Total).
+  - `insertCost(ticketId, amount)` : Enregistre un coût de fermeture de type 'close'.
+  - `insertReopen(ticketId, amount, reopeningPct, reopenMode)` : Enregistre un coût de réouverture de type 'reopen'.
+  - `cancelLastActiveCost(ticketId)` : Annule/désactive le dernier coût actif (is_active = 0).
+  - `getCostReportByItemtype()` : Génère le rapport financier avec les coûts (close) et réouvertures (reopen) distribués par itemtype et par item.
 - **Service `ticketItem.cjs`** :
-  - `upsertTicketItems(ticketId, items)` : Insère ou ignore les items d'un ticket
-  - `getItemsByTicket(ticketId)` : Récupère les items d'un ticket
-  - `countItemsByTicket(ticketId)` : Compte le nombre d'items d'un ticket
+  - `upsertTicketItems(ticketId, items)` : Enregistre les associations d'items pour un ticket.
+  - `getItemsByTicket(ticketId)` : Récupère les items associés à un ticket.
+  - `countItemsByTicket(ticketId)` : Compte le nombre d'items associés à un ticket.
 - **Routes mises à jour** : `/backend/ticket-super-cost/` et `/backend/ticket-item/`
 - **Frontend mis à jour** :
   - `superCostService.js` : Appels aux nouveaux endpoints
@@ -512,6 +514,22 @@ src/
 ### Gestion des Erreurs
 - Ajout de try/catch dans les routes Express pour renvoyer des erreurs détaillées.
 - Console log dans le frontend pour débuguer les appels API.
+
+---
+
+## Modifications récentes (21/06/2026)
+
+### Correction de l'Initialisation du Backend Express
+- **Correction du TypeError sur Express** : Résolution du crash au démarrage (`TypeError: argument handler must be a function`) en implémentant le fichier de routes `backend/routes/ticket-super-cost/superCost.cjs` qui était vide.
+- **Définition complète des routes ticket-super-cost** : Implémentation des 8 endpoints pour gérer les surcoûts et les réouvertures.
+- **Ordre de routage d'Express** : Positionnement des routes statiques/spécifiques (`/total`, `/report`, `/reopen`) avant les routes dynamiques/paramétrées (`/:ticketId`) pour éviter les conflits de capture.
+
+### Ajustement des Modes de Réouverture (Inversion Mode 3 et Mode 4)
+- **Mise à jour de la logique SQL** : Inversion des modes dans `backend/services/ticketSuperCost.cjs` :
+  - **Mode 3** : Devient la **moyenne** des coûts actifs (`AVG(amount)`).
+  - **Mode 4** : Devient le **total** des coûts actifs (`SUM(amount)`).
+- **Mise à jour de l'UI Frontend** : Synchronisation des menus déroulants d'options de mode de réouverture dans `KanbanPage.jsx` et `CostImportPage.jsx` pour refléter cette inversion (1: Dernier, 2: Premier, 3: Moyenne, 4: Total).
+- **Fichier de test CSV** : Mise à jour de `import/sqlite.csv` pour utiliser des IDs existants (`583`, `584` au lieu de `579`, `580`).
 
 ---
 
@@ -582,9 +600,11 @@ glpi-newapp/
         │   ├── index.cjs
         │   ├── colors.cjs         ← Routes /backend/history/colors
         │   └── ticketStatus.cjs   ← Routes /backend/history/ticket-status
-        └── ticket-super-cost/
-            ├── index.cjs
-            └── superCost.cjs      ← Routes /backend/ticket-super-cost
+        ├── ticket-super-cost/
+        │   ├── index.cjs
+        │   └── superCost.cjs      ← Routes /backend/ticket-super-cost
+        └── ticket-item/
+            └── index.cjs          ← Routes /backend/ticket-item
 ```
 
 ---
@@ -637,9 +657,19 @@ Toutes les routes personnalisées commencent désormais par le préfixe `/backen
 * **`GET /backend/history/ticket-status/:ticketId`** : Récupère l'historique propre à un ticket.
 
 #### 3. Surcoûts (`/backend/ticket-super-cost`)
-* **`GET /backend/ticket-super-cost/total`** : Calcule le total cumulé de tous les surcoûts.
-* **`GET /backend/ticket-super-cost/:ticketId`** : Récupère le surcoût associé à un ticket.
-* **`POST /backend/ticket-super-cost`** : Enregistre ou met à jour le surcoût d'un ticket (`INSERT` ou `UPDATE`).
+* **`GET /backend/ticket-super-cost/total`** : Calcule le total cumulé de tous les surcoûts de fermeture actifs (`type = 'close'`).
+* **`GET /backend/ticket-super-cost/report`** : Récupère le rapport complet des coûts de fermeture et de réouverture par itemtype.
+* **`GET /backend/ticket-super-cost/:ticketId/last-active`** : Récupère le dernier surcoût de type 'close' actif pour un ticket.
+* **`GET /backend/ticket-super-cost/:ticketId/base/:mode`** : Calcule le montant de base pour la réouverture d'un ticket selon le mode sélectionné (1: Dernier, 2: Premier, 3: Moyenne, 4: Total).
+* **`GET /backend/ticket-super-cost/:ticketId`** : Récupère le montant du dernier coût de type 'close' actif pour un ticket.
+* **`POST /backend/ticket-super-cost`** : Enregistre un nouveau coût de fermeture de type 'close'.
+* **`POST /backend/ticket-super-cost/reopen`** : Enregistre un coût de réouverture de type 'reopen' avec son pourcentage et son mode de calcul.
+* **`POST /backend/ticket-super-cost/:ticketId/cancel`** : Annule le dernier coût ou réouverture actif du ticket (`is_active = 0`).
+
+#### 4. Relations Ticket-Items (`/backend/ticket-item`)
+* **`POST /backend/ticket-item`** : Associe des items (équipements) à un ticket.
+* **`GET /backend/ticket-item/:ticketId`** : Récupère la liste des items associés à un ticket.
+* **`GET /backend/ticket-item/:ticketId/count`** : Récupère le nombre d'items associés à un ticket.
 
 ---
 

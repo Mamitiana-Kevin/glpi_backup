@@ -25,8 +25,8 @@ function getTotalSuperCost() {
  * Retourne le montant de base selon le mode choisi.
  * Mode 1 : dernier close actif
  * Mode 2 : premier close actif
- * Mode 3 : total des closes actifs
- * Mode 4 : moyenne des closes actifs
+ * Mode 3 : moyenne des closes actifs
+ * Mode 4 : total des closes actifs
  */
 function getBaseForMode(ticketId, mode) {
   const modeInt = parseInt(mode, 10);
@@ -44,12 +44,12 @@ function getBaseForMode(ticketId, mode) {
       return row?.amount ?? 0;
     case 3:
       row = db.prepare(
-        `SELECT COALESCE(SUM(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
+        `SELECT COALESCE(AVG(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
       ).get(ticketId);
       return row?.base ?? 0;
-    case 4:
-      row = db.prepare(
-        `SELECT COALESCE(AVG(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
+      case 4:
+        row = db.prepare(
+        `SELECT COALESCE(SUM(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
       ).get(ticketId);
       return row?.base ?? 0;
     default:
