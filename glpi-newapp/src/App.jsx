@@ -8,6 +8,7 @@ import ImportPage from './pages/backoffice/import/ImportPage';
 import Tickets from './pages/backoffice/tickets/Tickets';
 import KanbanSettingsPage from './pages/backoffice/settings/KanbanSettingsPage';
 import CostReportPage from './pages/backoffice/costs/CostReportPage';
+import ReopenListPage from './pages/backoffice/costs/ReopenListPage';
 import CostImportPage from './pages/frontoffice/costs/CostImportPage';
 
 import Element from './pages/frontoffice/elements/Element';
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="kanban" element={<KanbanSettingsPage />} />
             <Route path="costs" element={<CostReportPage />} />
             <Route path="costs/import" element={<CostImportPage />} />
+            <Route path="costs/reopens" element={<ReopenListPage />} />
           </Route>
 
           {/* ── Fallback ── */}

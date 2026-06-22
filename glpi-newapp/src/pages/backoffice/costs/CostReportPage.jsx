@@ -14,9 +14,9 @@ async function fetchItemName(item) {
     NetworkEquipment: 'NetworkEquipment',
     Software: 'Software'
   };
-  
+
   const glpiType = itemtypeMap[item.itemtype] || item.itemtype;
-  
+
   try {
     const res = await Legacy.get(`/${glpiType}/${item.item_id}`);
     return res.data.name || `ID ${item.item_id}`;
@@ -117,6 +117,7 @@ export default function CostReportPage() {
             <th style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'left' }}>Total coût GLPI</th>
             <th style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'left' }}>Super Coût</th>
             <th style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'left' }}>Total coût réouverture</th>
+            <th style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'left' }}>Total</th>
           </tr>
         </thead>
         <tbody>
@@ -131,9 +132,10 @@ export default function CostReportPage() {
             <>
               <tr key={index} onClick={() => handleToggle(row.itemtype)} style={{ cursor: 'pointer' }}>
                 <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.itemtype}</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_glpi_cost || 0).toFixed(2)} €</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_super_cost || 0).toFixed(2)} €</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_reopening_cost || 0).toFixed(2)} €</td>
+                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_glpi_cost || 0).toFixed(3)} €</td>
+                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_super_cost || 0).toFixed(3)} €</td>
+                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_reopening_cost || 0).toFixed(3)} €</td>
+                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_super_cost + row.total_reopening_cost + row.total_glpi_cost || 0).toFixed(3)} €</td>
               </tr>
               {expandedType === row.itemtype && row.items && row.items.length > 0 && (
                 <tr>

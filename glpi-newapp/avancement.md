@@ -533,6 +533,25 @@ src/
 
 ---
 
+## Modifications récentes (22/06/2026)
+
+### Gestion CRUD des Réouvertures et Supercosts
+- **Nouvelle Page de Gestion SQLite (`ReopenListPage.jsx`)** :
+  - Création d'une page divisée en deux sections : Supercosts (fermetures) et Réouvertures.
+  - Permet la modification inline du montant pour les supercosts (sans possibilité de suppression).
+  - Permet la modification inline du pourcentage et du mode pour les réouvertures (sans possibilité de suppression).
+  - Navigation : Ajout d'une entrée "Liste sqlite" dans la sidebar (`BackOfficeLayout.jsx`) pointant vers `/costs/reopens`.
+- **Recalcul Dynamique en Cascade** :
+  - **Modification d'un Supercost** : La mise à jour du montant d'un supercost (`type = 'close'`) via `updateCloseCost` recalcule automatiquement et met à jour en cascade le montant de toutes les réouvertures (`type = 'reopen'`) associées au même ticket en fonction de leur mode et pourcentage enregistrés.
+  - **Modification d'une Réouverture** : La mise à jour du pourcentage ou du mode d'une réouverture via `updateReopen` recalcule automatiquement son montant sur la base financière correcte (en interrogeant `getBaseForMode`).
+- **Mises à jour des Services & Routes** :
+  - **Backend (`ticketSuperCost.cjs`)** : Ajout des fonctions d'accès et d'édition (`getAllCloseCosts`, `updateCloseCost`, `getAllReopens`, `updateReopen`).
+  - **Routes (`superCost.cjs`)** : Ajout des endpoints `GET /closes`, `PUT /closes/:id`, `GET /reopens`, `PUT /reopens/:id`.
+  - **Résolution de conflit de routage** : Positionnement des routes statiques `/closes` et `/reopens` avant la route dynamique `/:ticketId` dans Express pour éviter l'interception de ces chemins par `parseInt(req.params.ticketId)`.
+  - **Frontend Service (`superCostService.js`)** : Ajout des méthodes d'appel API associées.
+
+---
+
 ## Journal de bord des erreurs corrigées
 - **Erreur 400 (User creation)** : L'API Legacy attendait `name` au lieu de `login`. Corrigé.
 - **Erreur 404 (Ticket Update)** : Le `PUT` sur `/api/Assistance/Ticket/ID` échouait sur certaines versions. Corrigé en utilisant `Legacy.put('Ticket/ID', ...)`.

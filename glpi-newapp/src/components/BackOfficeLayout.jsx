@@ -63,6 +63,9 @@ export default function BackOfficeLayout() {
           <Link to="/costs" className="menu-item">
             {!isCollapsed && <span className="label">Rapport Coûts</span>}
           </Link>
+          <Link to="/costs/reopens" className="menu-item">
+            {!isCollapsed && <span className="label">Liste sqlite</span>}
+          </Link>
 
           {/* DROPDOWN 1 : PARC */}
           <div className={`menu-dropdown-wrapper ${openDropdown.parc && !isCollapsed ? 'open' : ''}`}>

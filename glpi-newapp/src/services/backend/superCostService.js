@@ -58,3 +58,25 @@ export async function saveReopen(ticketId, amount, reopeningPct, reopenMode) {
   });
   return response.data;
 }
+
+export async function fetchAllReopens() {
+  const response = await client.get('/ticket-super-cost/reopens');
+  return response.data;
+}
+
+export async function updateReopen(id, reopeningPct, reopenMode) {
+  const response = await client.put(`/ticket-super-cost/reopens/${id}`, { reopeningPct, reopenMode });
+  return response.data;
+}
+
+
+
+export async function fetchAllCloseCosts() {
+  const response = await client.get('/ticket-super-cost/closes');
+  return response.data;
+}
+
+export async function updateCloseCost(id, amount) {
+  const response = await client.put(`/ticket-super-cost/closes/${id}`, { amount });
+  return response.data;
+}

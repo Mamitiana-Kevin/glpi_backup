@@ -1,1 +1,4 @@
 mysql -u root glpi < "C:\Users\Mamitiana\Documents\glpi_backup.sql"
+
+
+cd C:\xampp\htdocs\glpi\glpi-newapp

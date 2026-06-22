@@ -28,29 +28,26 @@ function getTotalSuperCost() {
  * Mode 3 : moyenne des closes actifs
  * Mode 4 : total des closes actifs
  */
-function getBaseForMode(ticketId, mode) {
+function getBaseForMode(ticketId, mode, beforeId = null) {
   const modeInt = parseInt(mode, 10);
+  const filter = beforeId
+    ? `ticket_id = ? AND type = 'close' AND is_active = 1 AND id < ?`
+    : `ticket_id = ? AND type = 'close' AND is_active = 1`;
+  const params = beforeId ? [ticketId, beforeId] : [ticketId];
+
   let row;
   switch (modeInt) {
     case 1:
-      row = db.prepare(
-        `SELECT amount FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1 ORDER BY id DESC LIMIT 1`
-      ).get(ticketId);
+      row = db.prepare(`SELECT amount FROM ticket_super_cost WHERE ${filter} ORDER BY id DESC LIMIT 1`).get(...params);
       return row?.amount ?? 0;
     case 2:
-      row = db.prepare(
-        `SELECT amount FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1 ORDER BY id ASC LIMIT 1`
-      ).get(ticketId);
+      row = db.prepare(`SELECT amount FROM ticket_super_cost WHERE ${filter} ORDER BY id ASC LIMIT 1`).get(...params);
       return row?.amount ?? 0;
     case 3:
-      row = db.prepare(
-        `SELECT COALESCE(AVG(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
-      ).get(ticketId);
+      row = db.prepare(`SELECT COALESCE(AVG(amount), 0) AS base FROM ticket_super_cost WHERE ${filter}`).get(...params);
       return row?.base ?? 0;
-      case 4:
-        row = db.prepare(
-        `SELECT COALESCE(SUM(amount), 0) AS base FROM ticket_super_cost WHERE ticket_id = ? AND type = 'close' AND is_active = 1`
-      ).get(ticketId);
+    case 4:
+      row = db.prepare(`SELECT COALESCE(SUM(amount), 0) AS base FROM ticket_super_cost WHERE ${filter}`).get(...params);
       return row?.base ?? 0;
     default:
       throw new Error(`Mode inconnu : ${mode}`);
@@ -192,6 +189,59 @@ function getCostReportByItemtype() {
 
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
+function getAllReopens() {
+  return db.prepare(
+    `SELECT * FROM ticket_super_cost WHERE type = 'reopen' ORDER BY id DESC`
+  ).all();
+}
+
+
+function updateReopen(id, reopeningPct, reopenMode) {
+  const row = db.prepare(
+    `SELECT ticket_id FROM ticket_super_cost WHERE id = ?`
+  ).get(id);
+  if (!row) return;
+
+  const ticketId = row.ticket_id;
+  const base = getBaseForMode(ticketId, reopenMode, id); // beforeId = id du reopen
+  const amount = (reopeningPct / 100) * base;
+
+  db.prepare(
+    `UPDATE ticket_super_cost SET reopening_pct = ?, reopen_mode = ?, amount = ? WHERE id = ? AND type = 'reopen'`
+  ).run(reopeningPct, reopenMode, amount, id);
+}
+
+
+function getAllCloseCosts() {
+  return db.prepare(
+    `SELECT * FROM ticket_super_cost WHERE type = 'close' ORDER BY id DESC`
+  ).all();
+}
+
+function updateCloseCost(id, amount) {
+  const closeRow = db.prepare(
+    `SELECT ticket_id FROM ticket_super_cost WHERE id = ?`
+  ).get(id);
+  if (!closeRow) return;
+
+  const ticketId = closeRow.ticket_id;
+
+  db.prepare(
+    `UPDATE ticket_super_cost SET amount = ? WHERE id = ? AND type = 'close'`
+  ).run(amount, id);
+
+  const reopens = db.prepare(
+    `SELECT id, reopening_pct, reopen_mode FROM ticket_super_cost WHERE ticket_id = ? AND type = 'reopen'`
+  ).all(ticketId);
+
+  for (const reopen of reopens) {
+    const base = getBaseForMode(ticketId, reopen.reopen_mode, reopen.id); // beforeId = id du reopen
+    const newAmount = (reopen.reopening_pct / 100) * base;
+    db.prepare(
+      `UPDATE ticket_super_cost SET amount = ? WHERE id = ?`
+    ).run(newAmount, reopen.id);
+  }
+}
 module.exports = {
   getLastActiveCost,
   getTicketCost,
@@ -201,4 +251,8 @@ module.exports = {
   insertReopen,
   cancelLastActiveCost,
   getCostReportByItemtype,
+  getAllReopens,
+  updateReopen,
+  getAllCloseCosts,
+  updateCloseCost,
 };

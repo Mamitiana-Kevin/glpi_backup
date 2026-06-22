@@ -9,6 +9,10 @@ const {
   insertReopen,
   cancelLastActiveCost,
   getCostReportByItemtype,
+  getAllReopens,
+  updateReopen,
+  getAllCloseCosts,
+  updateCloseCost,
 } = require('../../services/ticketSuperCost.cjs');
 
 // GET /backend/ticket-super-cost/total
@@ -54,6 +58,50 @@ router.get('/:ticketId/base/:mode', (req, res) => {
     res.json({ base });
   } catch (error) {
     console.error('Error fetching base for mode:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /backend/ticket-super-cost/reopens
+router.get('/reopens', (req, res) => {
+  try {
+    res.json(getAllReopens());
+  } catch (error) {
+    console.error('Error fetching reopens :', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /backend/ticket-super-cost/reopens/:id
+router.put('/reopens/:id', (req, res) => {
+  try {
+    const { reopeningPct, reopenMode } = req.body;
+    updateReopen(parseInt(req.params.id, 10), parseFloat(reopeningPct), parseInt(reopenMode, 10));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error update reopens :', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /backend/ticket-super-cost/closes
+router.get('/closes', (req, res) => {
+  try {
+    res.json(getAllCloseCosts());
+  } catch (error) {
+    console.error('Error fetching supercost :', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /backend/ticket-super-cost/closes/:id
+router.put('/closes/:id', (req, res) => {
+  try {
+    const { amount } = req.body;
+    updateCloseCost(parseInt(req.params.id, 10), parseFloat(amount));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error update supercost :', error);
     res.status(500).json({ error: error.message });
   }
 });
