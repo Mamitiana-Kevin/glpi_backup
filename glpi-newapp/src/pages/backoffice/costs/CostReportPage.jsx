@@ -123,7 +123,7 @@ export default function CostReportPage() {
         <tbody>
           {reportData.length === 0 && (
             <tr>
-              <td colSpan={4} style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'center' }}>
+              <td colSpan={5} style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'center' }}>
                 Aucune donnée à afficher
               </td>
             </tr>
@@ -139,7 +139,7 @@ export default function CostReportPage() {
               </tr>
               {expandedType === row.itemtype && row.items && row.items.length > 0 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: 0 }}>
+                  <td colSpan={5} style={{ padding: 0 }}>
                     <div style={{ padding: 12, background: '#f9fafb', border: '1px solid #e5e7eb' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
                         <thead>

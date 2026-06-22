@@ -542,10 +542,15 @@ src/
   - Permet la modification inline du pourcentage et du mode pour les réouvertures (sans possibilité de suppression).
   - Navigation : Ajout d'une entrée "Liste sqlite" dans la sidebar (`BackOfficeLayout.jsx`) pointant vers `/costs/reopens`.
 - **Recalcul Dynamique en Cascade** :
-  - **Modification d'un Supercost** : La mise à jour du montant d'un supercost (`type = 'close'`) via `updateCloseCost` recalcule automatiquement et met à jour en cascade le montant de toutes les réouvertures (`type = 'reopen'`) associées au même ticket en fonction de leur mode et pourcentage enregistrés.
-  - **Modification d'une Réouverture** : La mise à jour du pourcentage ou du mode d'une réouverture via `updateReopen` recalcule automatiquement son montant sur la base financière correcte (en interrogeant `getBaseForMode`).
+  - **Modification d'un Supercost** : La mise à jour du montant d'un supercost (`type = 'close'`) via `updateCloseCost` recalcule automatiquement et met à jour en cascade le montant de toutes les réouvertures (`type = 'reopen'`) associées au même ticket.
+  - **Modification d'une Réouverture** : La mise à jour du pourcentage ou du mode d'une réouverture via `updateReopen` recalcule automatiquement son montant sur la base financière correcte.
+  - **Filtrage Chronologique (`beforeId`)** : Ajout d'un paramètre optionnel `beforeId` à `getBaseForMode`. Lors des calculs de réouverture (création/modification), seuls les coûts de fermeture plus anciens (`id < reopen_id`) sont pris en compte pour obtenir une base financière fidèle à l'instant de la réouverture.
+- **Mises à jour du Rapport de Coûts (`CostReportPage.jsx`)** :
+  - Ajout d'une colonne "Total" sommant les coûts GLPI, Super Cost et Coûts de Réouverture.
+  - Passage à une précision d'affichage de 3 décimales pour tous les montants.
+  - Ajustement des attributs `colSpan` à 5 pour s'adapter à la nouvelle colonne.
 - **Mises à jour des Services & Routes** :
-  - **Backend (`ticketSuperCost.cjs`)** : Ajout des fonctions d'accès et d'édition (`getAllCloseCosts`, `updateCloseCost`, `getAllReopens`, `updateReopen`).
+  - **Backend (`ticketSuperCost.cjs`)** : Ajout des fonctions d'accès et d'édition (`getAllCloseCosts`, `updateCloseCost`, `getAllReopens`, `updateReopen`, avec intégration du filtre chronologique).
   - **Routes (`superCost.cjs`)** : Ajout des endpoints `GET /closes`, `PUT /closes/:id`, `GET /reopens`, `PUT /reopens/:id`.
   - **Résolution de conflit de routage** : Positionnement des routes statiques `/closes` et `/reopens` avant la route dynamique `/:ticketId` dans Express pour éviter l'interception de ces chemins par `parseInt(req.params.ticketId)`.
   - **Frontend Service (`superCostService.js`)** : Ajout des méthodes d'appel API associées.
