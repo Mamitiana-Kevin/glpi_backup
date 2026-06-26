@@ -68,16 +68,15 @@ function insertCost(ticketId, amount) {
   return getLastActiveCost(ticketId);
 }
 
-/**
- * Insère un coût de réouverture (type='reopen').
- * amount est déjà calculé côté React (pct/100 * base).
- */
-function insertReopen(ticketId, amount, reopeningPct, reopenMode) {
+function insertReopen(ticketId, calculatedAmount, reopeningPct, reopenMode) {
+  const maxIdRow = db.prepare(`SELECT MAX(id) AS max_id FROM ticket_super_cost`).get();
+  const nextId = (maxIdRow?.max_id ?? 0) + 1;
+  const finalAmount = computeReopenAmount(ticketId, calculatedAmount, nextId);
   const createdAt = new Date().toISOString();
   db.prepare(
     `INSERT INTO ticket_super_cost (ticket_id, amount, type, reopening_pct, reopen_mode, is_active, created_at)
      VALUES (?, ?, 'reopen', ?, ?, 1, ?)`
-  ).run(ticketId, amount, reopeningPct, reopenMode, createdAt);
+  ).run(ticketId, finalAmount, reopeningPct, reopenMode, createdAt);
 }
 
 /**
@@ -189,12 +188,46 @@ function getCostReportByItemtype() {
 
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
+function getPlafondPct() {
+  const row = db.prepare(`SELECT value FROM cost_settings WHERE key = 'plafond_pct'`).get();
+  return row?.value ?? 30;
+}
+
+function setPlafondPct(pct) {
+  db.prepare(`UPDATE cost_settings SET value = ? WHERE key = 'plafond_pct'`).run(pct);
+}
+
+function getPlafondForTicket(ticketId, beforeId) {
+  const totalCloses = getBaseForMode(ticketId, 4, beforeId);
+  const pct = getPlafondPct();
+  return totalCloses * (pct / 100);
+}
+
+function getCumulReopens(ticketId, beforeId) {
+  const filter = beforeId
+    ? `ticket_id = ? AND type = 'reopen' AND is_active = 1 AND id < ?`
+    : `ticket_id = ? AND type = 'reopen' AND is_active = 1`;
+  const params = beforeId ? [ticketId, beforeId] : [ticketId];
+  const row = db.prepare(
+    `SELECT COALESCE(SUM(amount), 0) AS total FROM ticket_super_cost WHERE ${filter}`
+  ).get(...params);
+  return row?.total ?? 0;
+}
+
+function computeReopenAmount(ticketId, calculatedAmount, beforeId) {
+  const plafond = getPlafondForTicket(ticketId, beforeId);
+  const cumul = getCumulReopens(ticketId, beforeId);
+  const reste = plafond - cumul;
+  if (reste <= 0) return 0;
+  if (calculatedAmount > reste) return reste;
+  return calculatedAmount;
+}
+
 function getAllReopens() {
   return db.prepare(
     `SELECT * FROM ticket_super_cost WHERE type = 'reopen' ORDER BY id DESC`
   ).all();
 }
-
 
 function updateReopen(id, reopeningPct, reopenMode) {
   const row = db.prepare(
@@ -203,21 +236,20 @@ function updateReopen(id, reopeningPct, reopenMode) {
   if (!row) return;
 
   const ticketId = row.ticket_id;
-  const base = getBaseForMode(ticketId, reopenMode, id); // beforeId = id du reopen
-  const amount = (reopeningPct / 100) * base;
+  const base = getBaseForMode(ticketId, reopenMode, id);
+  const calculatedAmount = (reopeningPct / 100) * base;
+  const finalAmount = computeReopenAmount(ticketId, calculatedAmount, id);
 
   db.prepare(
     `UPDATE ticket_super_cost SET reopening_pct = ?, reopen_mode = ?, amount = ? WHERE id = ? AND type = 'reopen'`
-  ).run(reopeningPct, reopenMode, amount, id);
+  ).run(reopeningPct, reopenMode, finalAmount, id);
 }
-
 
 function getAllCloseCosts() {
   return db.prepare(
     `SELECT * FROM ticket_super_cost WHERE type = 'close' ORDER BY id DESC`
   ).all();
 }
-
 function updateCloseCost(id, amount) {
   const closeRow = db.prepare(
     `SELECT ticket_id FROM ticket_super_cost WHERE id = ?`
@@ -230,18 +262,50 @@ function updateCloseCost(id, amount) {
     `UPDATE ticket_super_cost SET amount = ? WHERE id = ? AND type = 'close'`
   ).run(amount, id);
 
+  _recalcReopens(ticketId);
+}
+
+function restoreCost(id) {
+  const row = db.prepare(
+    `SELECT ticket_id, type FROM ticket_super_cost WHERE id = ?`
+  ).get(id);
+  if (!row) return;
+
+  db.prepare(
+    `UPDATE ticket_super_cost SET is_active = 1 WHERE id = ?`
+  ).run(id);
+
+  if (row.type === 'close') {
+    _recalcReopens(row.ticket_id);
+  }
+}
+
+function _recalcReopens(ticketId) {
+
+
   const reopens = db.prepare(
-    `SELECT id, reopening_pct, reopen_mode FROM ticket_super_cost WHERE ticket_id = ? AND type = 'reopen'`
+    `SELECT id, reopening_pct, reopen_mode FROM ticket_super_cost 
+     WHERE ticket_id = ? AND type = 'reopen' AND is_active = 1 
+     ORDER BY id ASC`
   ).all(ticketId);
 
   for (const reopen of reopens) {
-    const base = getBaseForMode(ticketId, reopen.reopen_mode, reopen.id); // beforeId = id du reopen
-    const newAmount = (reopen.reopening_pct / 100) * base;
+    const base = getBaseForMode(ticketId, reopen.reopen_mode, reopen.id);
+    const calculatedAmount = (reopen.reopening_pct / 100) * base;
+    const finalAmount = computeReopenAmount(ticketId, calculatedAmount, reopen.id);
     db.prepare(
       `UPDATE ticket_super_cost SET amount = ? WHERE id = ?`
-    ).run(newAmount, reopen.id);
+    ).run(finalAmount, reopen.id);
   }
 }
+function getCancelledCosts() {
+  return db.prepare(
+    `SELECT * FROM ticket_super_cost WHERE is_active = 0 ORDER BY id DESC`
+  ).all();
+}
+
+
+
 module.exports = {
   getLastActiveCost,
   getTicketCost,
@@ -255,4 +319,8 @@ module.exports = {
   updateReopen,
   getAllCloseCosts,
   updateCloseCost,
+  getCancelledCosts,
+  restoreCost,
+  getPlafondPct,
+  setPlafondPct,
 };

@@ -121,53 +121,16 @@ export default function CostReportPage() {
           </tr>
         </thead>
         <tbody>
-          {reportData.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: 12, border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                Aucune donnée à afficher
+          {reportData.map((row, index) => (
+            <tr key={index}>
+              <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.itemtype}</td>
+              <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.total_glpi_cost.toFixed(3)} €</td>
+              <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.total_super_cost.toFixed(3)} €</td>
+              <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.total_reopening_cost.toFixed(2)} €</td>
+              <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>
+                {(row.total_glpi_cost + row.total_super_cost + row.total_reopening_cost).toFixed(3)} €
               </td>
             </tr>
-          )}
-          {reportData.map((row, index) => (
-            <>
-              <tr key={index} onClick={() => handleToggle(row.itemtype)} style={{ cursor: 'pointer' }}>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{row.itemtype}</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_glpi_cost || 0).toFixed(3)} €</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_super_cost || 0).toFixed(3)} €</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_reopening_cost || 0).toFixed(3)} €</td>
-                <td style={{ padding: 12, border: '1px solid #e5e7eb' }}>{(row.total_super_cost + row.total_reopening_cost + row.total_glpi_cost || 0).toFixed(3)} €</td>
-              </tr>
-              {expandedType === row.itemtype && row.items && row.items.length > 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: 0 }}>
-                    <div style={{ padding: 12, background: '#f9fafb', border: '1px solid #e5e7eb' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
-                        <thead>
-                          <tr style={{ background: '#e5e7eb' }}>
-                            <th style={{ padding: 8, border: '1px solid #e5e7eb', textAlign: 'left' }}>ID</th>
-                            <th style={{ padding: 8, border: '1px solid #e5e7eb', textAlign: 'left' }}>Nom</th>
-                            <th style={{ padding: 8, border: '1px solid #e5e7eb', textAlign: 'left' }}>Coût réparti</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {row.items.map((item, idx) => {
-                            const key = `${item.itemtype}-${item.item_id}`;
-                            const name = itemNames[key] || `Chargement...`;
-                            return (
-                              <tr key={idx}>
-                                <td style={{ padding: 8, border: '1px solid #e5e7eb' }}>{item.item_id}</td>
-                                <td style={{ padding: 8, border: '1px solid #e5e7eb' }}>{name}</td>
-                                <td style={{ padding: 8, border: '1px solid #e5e7eb' }}>{(item.allocatedCost || 0).toFixed(2)} €</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </>
           ))}
         </tbody>
       </table>

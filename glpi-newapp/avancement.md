@@ -537,12 +537,16 @@ src/
 
 ### Gestion CRUD des Réouvertures et Supercosts
 - **Nouvelle Page de Gestion SQLite (`ReopenListPage.jsx`)** :
-  - Création d'une page divisée en deux sections : Supercosts (fermetures) et Réouvertures.
+  - Création d'une page divisée en trois sections : Supercosts (fermetures), Réouvertures et Coûts annulés.
   - Permet la modification inline du montant pour les supercosts (sans possibilité de suppression).
   - Permet la modification inline du pourcentage et du mode pour les réouvertures (sans possibilité de suppression).
+  - Affiche un tableau "Coûts annulés" listant les lignes avec `is_active = 0` et offrant un bouton "Rétablir".
   - Navigation : Ajout d'une entrée "Liste sqlite" dans la sidebar (`BackOfficeLayout.jsx`) pointant vers `/costs/reopens`.
+- **Rétablissement des Coûts Annulés** :
+  - L'action de rétablissement repasse la ligne concernée à `is_active = 1`.
+  - Si la ligne restaurée est de type `close`, elle déclenche automatiquement le recalcul et la mise à jour en cascade de tous les montants de réouverture pour ce ticket.
 - **Recalcul Dynamique en Cascade** :
-  - **Modification d'un Supercost** : La mise à jour du montant d'un supercost (`type = 'close'`) via `updateCloseCost` recalcule automatiquement et met à jour en cascade le montant de toutes les réouvertures (`type = 'reopen'`) associées au même ticket.
+  - **Modification d'un Supercost** : La mise à jour du montant d'un supercost (`type = 'close'`) via `updateCloseCost` recalcule automatiquement et met à jour en cascade le montant de toutes les réouvertures (`type = 'reopen'`) associées au même ticket. La logique de recalcul a été factorisée dans une fonction mutualisée `_recalcReopens` pour éviter toute duplication.
   - **Modification d'une Réouverture** : La mise à jour du pourcentage ou du mode d'une réouverture via `updateReopen` recalcule automatiquement son montant sur la base financière correcte.
   - **Filtrage Chronologique (`beforeId`)** : Ajout d'un paramètre optionnel `beforeId` à `getBaseForMode`. Lors des calculs de réouverture (création/modification), seuls les coûts de fermeture plus anciens (`id < reopen_id`) sont pris en compte pour obtenir une base financière fidèle à l'instant de la réouverture.
 - **Mises à jour du Rapport de Coûts (`CostReportPage.jsx`)** :
@@ -550,10 +554,17 @@ src/
   - Passage à une précision d'affichage de 3 décimales pour tous les montants.
   - Ajustement des attributs `colSpan` à 5 pour s'adapter à la nouvelle colonne.
 - **Mises à jour des Services & Routes** :
-  - **Backend (`ticketSuperCost.cjs`)** : Ajout des fonctions d'accès et d'édition (`getAllCloseCosts`, `updateCloseCost`, `getAllReopens`, `updateReopen`, avec intégration du filtre chronologique).
-  - **Routes (`superCost.cjs`)** : Ajout des endpoints `GET /closes`, `PUT /closes/:id`, `GET /reopens`, `PUT /reopens/:id`.
-  - **Résolution de conflit de routage** : Positionnement des routes statiques `/closes` et `/reopens` avant la route dynamique `/:ticketId` dans Express pour éviter l'interception de ces chemins par `parseInt(req.params.ticketId)`.
-  - **Frontend Service (`superCostService.js`)** : Ajout des méthodes d'appel API associées.
+  - **Backend (`ticketSuperCost.cjs`)** : Ajout des fonctions d'accès et d'édition (`getAllCloseCosts`, `updateCloseCost`, `getAllReopens`, `updateReopen`, `getCancelledCosts`, `restoreCost`).
+  - **Routes (`superCost.cjs`)** : Ajout des endpoints `GET /closes`, `PUT /closes/:id`, `GET /reopens`, `PUT /reopens/:id`, `GET /cancelled`, `PUT /:id/restore`.
+  - **Résolution de conflit de routage** : Positionnement des routes statiques `/closes`, `/reopens` et `/cancelled` avant la route dynamique `/:ticketId` dans Express pour éviter l'interception de ces chemins par `parseInt(req.params.ticketId)`.
+  - **Frontend Service (`superCostService.js`)** : Ajout des méthodes d'appel API associées (`fetchCancelledCosts`, `restoreCost`).
+
+- **Plafond Global de Réouverture** :
+  - **Table `cost_settings`** : Création de la table SQLite stockant le paramètre global `plafond_pct` (valeur par défaut : 30%).
+  - **Fonction `computeReopenAmount`** : Fonction centrale au backend limitant le montant des réouvertures afin que la somme des montants cumulés pour un ticket ne dépasse pas le plafond (défini comme le pourcentage configuré multiplié par le total des fermetures antérieures du ticket).
+  - **Intégration Backend** : `insertReopen`, `updateReopen`, `updateCloseCost`, et `restoreCost` utilisent désormais `computeReopenAmount` sous des transactions SQLite pour garantir l'application stricte et atomique du plafond.
+  - **Endpoints API** : Ajout de `GET /backend/cost-settings/plafond` et `PUT /backend/cost-settings/plafond`.
+  - **Interface utilisateur** : Ajout d'une section de configuration du plafond global en haut de `ReopenListPage.jsx` avec un mode d'édition en ligne.
 
 ---
 

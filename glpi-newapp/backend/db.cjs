@@ -81,7 +81,13 @@ async function init() {
       itemtype  TEXT    NOT NULL,
       UNIQUE(ticket_id, item_id, itemtype)
     );
+    CREATE TABLE IF NOT EXISTS cost_settings (
+      key   TEXT PRIMARY KEY,
+      value REAL NOT NULL
+    );
   `);
+
+  _db.run(`INSERT OR IGNORE INTO cost_settings (key, value) VALUES ('plafond_pct', 30)`);
 
   // Sauvegarder immédiatement si nouvelle base
   _save();

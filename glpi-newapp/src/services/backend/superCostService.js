@@ -80,3 +80,23 @@ export async function updateCloseCost(id, amount) {
   const response = await client.put(`/ticket-super-cost/closes/${id}`, { amount });
   return response.data;
 }
+
+export async function fetchCancelledCosts() {
+  const response = await client.get('/ticket-super-cost/cancelled');
+  return response.data;
+}
+
+export async function restoreCost(id) {
+  const response = await client.put(`/ticket-super-cost/${id}/restore`);
+  return response.data;
+}
+
+export async function fetchPlafond() {
+  const response = await client.get('/cost-settings/plafond');
+  return response.data;
+}
+
+export async function savePlafond(value) {
+  const response = await client.put('/cost-settings/plafond', { value });
+  return response.data;
+}

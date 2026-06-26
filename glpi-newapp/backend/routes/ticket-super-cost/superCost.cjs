@@ -13,6 +13,8 @@ const {
   updateReopen,
   getAllCloseCosts,
   updateCloseCost,
+  getCancelledCosts,
+  restoreCost,
 } = require('../../services/ticketSuperCost.cjs');
 
 // GET /backend/ticket-super-cost/total
@@ -106,6 +108,15 @@ router.put('/closes/:id', (req, res) => {
   }
 });
 
+// GET /backend/ticket-super-cost/cancelled
+router.get('/cancelled', (req, res) => {
+  try {
+    res.json(getCancelledCosts());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /backend/ticket-super-cost/:ticketId
 router.get('/:ticketId', (req, res) => {
   try {
@@ -155,6 +166,16 @@ router.post('/:ticketId/cancel', (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Error cancelling last active cost:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /backend/ticket-super-cost/:id/restore
+router.put('/:id/restore', (req, res) => {
+  try {
+    restoreCost(parseInt(req.params.id, 10));
+    res.json({ success: true });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

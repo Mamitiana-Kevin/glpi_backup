@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import {
   fetchAllReopens, updateReopen,
   fetchAllCloseCosts, updateCloseCost,
+  fetchCancelledCosts, restoreCost,
+  fetchPlafond, savePlafond,
 } from '../../../services/backend/superCostService';
 
 const MODE_LABELS = { 1: 'Dernier', 2: 'Premier', 3: 'Moyenne', 4: 'Total' };
@@ -16,6 +17,10 @@ function useInlineEdit() {
 export default function ReopenListPage() {
   const [closes, setCloses] = useState([]);
   const [reopens, setReopens] = useState([]);
+  const [cancelled, setCancelled] = useState([]);
+  const [plafond, setPlafond] = useState(30);
+  const [isEditingPlafond, setIsEditingPlafond] = useState(false);
+  const [tempPlafond, setTempPlafond] = useState('');
 
   const closeEdit = useInlineEdit();
   const reopenEdit = useInlineEdit();
@@ -24,13 +29,22 @@ export default function ReopenListPage() {
 
   async function loadAll() {
     try {
-      const [c, r] = await Promise.all([fetchAllCloseCosts(), fetchAllReopens()]);
+      const [c, r, can, p] = await Promise.all([
+        fetchAllCloseCosts(),
+        fetchAllReopens(),
+        fetchCancelledCosts(),
+        fetchPlafond()
+      ]);
       setCloses(Array.isArray(c) ? c : []);
       setReopens(Array.isArray(r) ? r : []);
+      setCancelled(Array.isArray(can) ? can : []);
+      if (p && p.value !== undefined) {
+        setPlafond(p.value);
+        setTempPlafond(p.value);
+      }
     } catch (err) {
-      console.error("Failed to load SQLite data:", err);
-      setCloses([]);
-      setReopens([]);
+      console.error('Failed to load SQLite data:', err);
+      setCloses([]); setReopens([]); setCancelled([]);
     }
   }
 
@@ -60,11 +74,47 @@ export default function ReopenListPage() {
     }
   }
 
+  async function handleSavePlafond() {
+    try {
+      const val = parseFloat(tempPlafond);
+      if (isNaN(val) || val < 0) {
+        alert("Veuillez saisir un pourcentage valide");
+        return;
+      }
+      await savePlafond(val);
+      setIsEditingPlafond(false);
+      loadAll();
+    } catch (err) {
+      console.error("Error saving plafond:", err);
+    }
+  }
+
   const safeCloses = closes || [];
   const safeReopens = reopens || [];
 
   return (
     <div>
+      <div>
+        <span>Plafond de réouverture global : </span>
+        {isEditingPlafond ? (
+          <>
+            <input
+              type="number"
+              value={tempPlafond}
+              onChange={(e) => setTempPlafond(e.target.value)}
+              
+            />
+            <button onClick={handleSavePlafond} >Enregistrer</button>
+            <button onClick={() => { setIsEditingPlafond(false); setTempPlafond(plafond); }}>Annuler</button>
+          </>
+        ) : (
+          <>
+            <strong>{plafond} %</strong>
+            <button onClick={() => setIsEditingPlafond(true)} style={{ marginLeft: '10px' }}>Modifier</button>
+          </>
+        )}
+      </div>
+
       <h1>Données SQLite</h1>
 
       {/* ── Section Supercosts (close) ── */}
@@ -154,6 +204,29 @@ export default function ReopenListPage() {
                     </button>
                   </>
                 )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h2>Couts annulés</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Ticket</th><th>Type</th><th>Montant</th><th>Date</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(cancelled || []).length === 0 && <tr><td colSpan={6}>Aucun coût annulé</td></tr>}
+          {(cancelled || []).map(row => (
+            <tr key={row.id}>
+              <td>{row.id}</td>
+              <td>{row.ticket_id}</td>
+              <td>{row.type}</td>
+              <td>{Number(row.amount).toFixed(2)} €</td>
+              <td>{row.created_at}</td>
+              <td>
+                <button onClick={async () => { await restoreCost(row.id); loadAll(); }}>Rétablir</button>
               </td>
             </tr>
           ))}

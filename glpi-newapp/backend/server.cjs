@@ -17,6 +17,24 @@ init().then(() => {
   const ticketItemRoutes = require('./routes/ticket-item/index.cjs');
   const resetSqliteRoutes = require('./routes/reset/sqlite.cjs');
 
+  const { getPlafondPct, setPlafondPct } = require('./services/ticketSuperCost.cjs');
+  app.get('/backend/cost-settings/plafond', (req, res) => {
+    try {
+      res.json({ value: getPlafondPct() });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  app.put('/backend/cost-settings/plafond', (req, res) => {
+    try {
+      const { value } = req.body;
+      setPlafondPct(parseFloat(value));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.use('/backend/settings/kanban', settingsRoutes);
   app.use('/backend/settings/languages', languagesRoutes);
   app.use('/backend/history/colors', historyColorsRoutes);
